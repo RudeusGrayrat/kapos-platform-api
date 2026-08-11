@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "PlatformAccessPermissionOverride_platformAccessId_permissionId_" RENAME TO "PlatformAccessPermissionOverride_platformAccessId_permissio_key";
