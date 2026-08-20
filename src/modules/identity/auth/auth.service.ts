@@ -78,7 +78,10 @@ export class AuthService {
         status: UserStatus.ACTIVE,
       });
 
-      const session = await this.issueSessionTokens(user.id, user.email ?? null);
+      const session = await this.issueSessionTokens(
+        user.id,
+        user.email ?? null,
+      );
 
       return {
         user,
@@ -116,7 +119,9 @@ export class AuthService {
     });
   }
 
-  async loginLocal(loginDto: ConsumerLoginDto | ErpLoginDto | LocalLoginInput): Promise<{
+  async loginLocal(
+    loginDto: ConsumerLoginDto | ErpLoginDto | LocalLoginInput,
+  ): Promise<{
     user: SafeUser;
     accessToken: string;
     refreshToken: string;
@@ -230,9 +235,12 @@ export class AuthService {
     refreshToken: string,
   ): Promise<RefreshTokenPayload> {
     try {
-      return await this.jwtService.verifyAsync<RefreshTokenPayload>(refreshToken, {
-        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
-      });
+      return await this.jwtService.verifyAsync<RefreshTokenPayload>(
+        refreshToken,
+        {
+          secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+        },
+      );
     } catch {
       throw this.createUnauthorizedException();
     }

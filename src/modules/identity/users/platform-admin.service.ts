@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { hash } from 'bcryptjs';
 import {
   DocumentType,
@@ -92,7 +96,9 @@ export class PlatformAdminService {
         phone: organization.phone,
         status: organization.status,
         activeModules: organization.modules.length,
-        moduleKeys: organization.modules.map((moduleItem) => moduleItem.moduleKey),
+        moduleKeys: organization.modules.map(
+          (moduleItem) => moduleItem.moduleKey,
+        ),
         activeWorkers: organization.memberships.length,
         ownerUserId: ownerMembership?.userId ?? null,
         ownerName: this.getUserDisplayName(ownerMembership?.user ?? null),
@@ -101,7 +107,11 @@ export class PlatformAdminService {
     });
   }
 
-  async listGlobalUsers(input?: { page?: number; limit?: number; search?: string }) {
+  async listGlobalUsers(input?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }) {
     const page = Math.max(1, input?.page ?? 1);
     const limit = Math.min(100, Math.max(5, input?.limit ?? 10));
     const search = input?.search?.trim();
@@ -147,8 +157,18 @@ export class PlatformAdminService {
                       ...organizationLeaderMembershipWhere,
                       organization: {
                         OR: [
-                          { legalName: { contains: search, mode: 'insensitive' } },
-                          { tradeName: { contains: search, mode: 'insensitive' } },
+                          {
+                            legalName: {
+                              contains: search,
+                              mode: 'insensitive',
+                            },
+                          },
+                          {
+                            tradeName: {
+                              contains: search,
+                              mode: 'insensitive',
+                            },
+                          },
                           { slug: { contains: search, mode: 'insensitive' } },
                         ],
                       },
@@ -274,10 +294,10 @@ export class PlatformAdminService {
       const scope = this.resolveUserScope(user);
       const platformRolePermissionKeys =
         user.platformAccess?.roleAssignments.flatMap((assignment) =>
-            assignment.role.permissions.map(
-              (rolePermission) => rolePermission.permission.key,
-            ),
-          ) ?? [];
+          assignment.role.permissions.map(
+            (rolePermission) => rolePermission.permission.key,
+          ),
+        ) ?? [];
       const platformOverrideGroups = this.groupPermissionOverrides(
         user.platformAccess?.permissionOverrides ?? [],
       );
@@ -286,11 +306,12 @@ export class PlatformAdminService {
         user.platformAccess?.permissionOverrides ?? [],
       );
       const memberships = user.memberships.map((membership) => {
-        const rolePermissionKeys = membership.roleAssignments.flatMap((assignment) =>
-              assignment.role.permissions.map(
-                (rolePermission) => rolePermission.permission.key,
-              ),
-            );
+        const rolePermissionKeys = membership.roleAssignments.flatMap(
+          (assignment) =>
+            assignment.role.permissions.map(
+              (rolePermission) => rolePermission.permission.key,
+            ),
+        );
         const overrideGroups = this.groupPermissionOverrides(
           membership.permissionOverrides,
         );
@@ -307,7 +328,8 @@ export class PlatformAdminService {
           organizationId: membership.organization.id,
           organizationSlug: membership.organization.slug,
           organizationName:
-            membership.organization.tradeName ?? membership.organization.legalName,
+            membership.organization.tradeName ??
+            membership.organization.legalName,
           organizationModuleKeys: membership.organization.modules.map(
             (moduleItem) => moduleItem.moduleKey,
           ),
@@ -352,7 +374,9 @@ export class PlatformAdminService {
           user.platformAccess?.roleAssignments.map(
             (assignment) => assignment.role.name,
           ) ?? [],
-        platformRolePermissionKeys: Array.from(new Set(platformRolePermissionKeys)),
+        platformRolePermissionKeys: Array.from(
+          new Set(platformRolePermissionKeys),
+        ),
         platformAllowPermissionKeys: platformOverrideGroups.allowPermissionKeys,
         platformDenyPermissionKeys: platformOverrideGroups.denyPermissionKeys,
         platformPermissionKeys,
@@ -366,7 +390,8 @@ export class PlatformAdminService {
         organizations: user.memberships.map((membership) => ({
           slug: membership.organization.slug,
           name:
-            membership.organization.tradeName ?? membership.organization.legalName,
+            membership.organization.tradeName ??
+            membership.organization.legalName,
           status: membership.status,
         })),
       };
@@ -400,9 +425,15 @@ export class PlatformAdminService {
               { title: { contains: search, mode: 'insensitive' } },
               { employeeCode: { contains: search, mode: 'insensitive' } },
               { user: { email: { contains: search, mode: 'insensitive' } } },
-              { user: { firstName: { contains: search, mode: 'insensitive' } } },
+              {
+                user: { firstName: { contains: search, mode: 'insensitive' } },
+              },
               { user: { lastName: { contains: search, mode: 'insensitive' } } },
-              { user: { documentNumber: { contains: search, mode: 'insensitive' } } },
+              {
+                user: {
+                  documentNumber: { contains: search, mode: 'insensitive' },
+                },
+              },
             ],
           }
         : {}),
@@ -677,7 +708,7 @@ export class PlatformAdminService {
             firstName: input.firstName ?? null,
             lastName: input.lastName ?? null,
             documentType: input.documentNumber
-              ? input.documentType ?? DocumentType.DNI
+              ? (input.documentType ?? DocumentType.DNI)
               : null,
             documentNumber: input.documentNumber ?? null,
             phone: input.phone ?? null,
@@ -700,7 +731,9 @@ export class PlatformAdminService {
           });
 
           if (!role || role.context !== RoleContext.PLATFORM) {
-            throw new NotFoundException('No se encontro el rol de plataforma solicitado.');
+            throw new NotFoundException(
+              'No se encontro el rol de plataforma solicitado.',
+            );
           }
 
           const platformAccess = await transaction.platformAccess.upsert({
@@ -730,7 +763,9 @@ export class PlatformAdminService {
           });
 
           if (!role || role.context !== RoleContext.ORGANIZATION) {
-            throw new NotFoundException('No se encontro el rol de organizacion solicitado.');
+            throw new NotFoundException(
+              'No se encontro el rol de organizacion solicitado.',
+            );
           }
 
           const membership = await transaction.membership.create({
@@ -753,7 +788,10 @@ export class PlatformAdminService {
         return user;
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo crear el usuario global.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo crear el usuario global.',
+      );
       throw error;
     }
   }
@@ -953,7 +991,10 @@ export class PlatformAdminService {
         return organization;
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo actualizar la organizacion.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo actualizar la organizacion.',
+      );
       throw error;
     }
   }
@@ -1078,7 +1119,10 @@ export class PlatformAdminService {
             where: {
               context: RoleContext.ORGANIZATION,
               scopeKey: { in: roleScopeKeys },
-              OR: [{ organizationId: null }, { organizationId: input.organizationId }],
+              OR: [
+                { organizationId: null },
+                { organizationId: input.organizationId },
+              ],
             },
             select: { id: true },
           });
@@ -1153,7 +1197,9 @@ export class PlatformAdminService {
         });
 
         if (!platformAccess) {
-          throw new NotFoundException('El usuario no tiene acceso de plataforma.');
+          throw new NotFoundException(
+            'El usuario no tiene acceso de plataforma.',
+          );
         }
 
         await this.replacePlatformPermissionOverrides(
@@ -1232,7 +1278,10 @@ export class PlatformAdminService {
         });
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo desvincular la membership.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo desvincular la membership.',
+      );
       throw error;
     }
   }
@@ -1266,7 +1315,10 @@ export class PlatformAdminService {
         },
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo actualizar el submodulo.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo actualizar el submodulo.',
+      );
       throw error;
     }
   }
@@ -1484,7 +1536,10 @@ export class PlatformAdminService {
         return this.findRoleSummary(transaction, role.id);
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo crear el rol personalizado.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo crear el rol personalizado.',
+      );
       throw error;
     }
   }
@@ -1545,7 +1600,10 @@ export class PlatformAdminService {
         return this.findRoleSummary(transaction, roleId);
       });
     } catch (error) {
-      this.handleKnownPrismaErrors(error, 'No se pudo actualizar el rol personalizado.');
+      this.handleKnownPrismaErrors(
+        error,
+        'No se pudo actualizar el rol personalizado.',
+      );
       throw error;
     }
   }
@@ -1577,12 +1635,14 @@ export class PlatformAdminService {
     return 'MANAGER';
   }
 
-  private getUserDisplayName(user: {
-    firstName: string | null;
-    lastName: string | null;
-    email: string | null;
-    documentNumber: string | null;
-  } | null) {
+  private getUserDisplayName(
+    user: {
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+      documentNumber: string | null;
+    } | null,
+  ) {
     if (!user) {
       return null;
     }
@@ -1611,20 +1671,16 @@ export class PlatformAdminService {
         'Entrega una vista ejecutiva y operativa del negocio apenas se ingresa al ERP.',
       settings:
         'Controla empresa, sucursales, usuarios, roles y parametros globales.',
-      rrhh:
-        'Administra colaboradores, asistencia y planillas del cliente.',
+      rrhh: 'Administra colaboradores, asistencia y planillas del cliente.',
       sales:
         'Agrupa clientes, cotizaciones, pedidos y el flujo comercial principal.',
-      cash:
-        'Controla aperturas, movimientos y cierres de caja por sede.',
+      cash: 'Controla aperturas, movimientos y cierres de caja por sede.',
       inventory:
         'Centraliza productos, categorias, stock y ajustes de inventario.',
       billing:
         'Reune documentos, series e integraciones de facturacion electronica.',
-      reports:
-        'Expone reportes para ventas, caja, inventario y clientes.',
-      operations:
-        'Ordena manifiestos, transportistas y rutas operativas.',
+      reports: 'Expone reportes para ventas, caja, inventario y clientes.',
+      operations: 'Ordena manifiestos, transportistas y rutas operativas.',
     };
 
     if (summaries[moduleKey]) {
@@ -1670,7 +1726,9 @@ export class PlatformAdminService {
   ) {
     return {
       allowPermissionKeys: overrides
-        .filter((override) => override.effect === PermissionOverrideEffect.ALLOW)
+        .filter(
+          (override) => override.effect === PermissionOverrideEffect.ALLOW,
+        )
         .map((override) => override.permission.key),
       denyPermissionKeys: overrides
         .filter((override) => override.effect === PermissionOverrideEffect.DENY)
@@ -1683,7 +1741,10 @@ export class PlatformAdminService {
     membershipId: string,
     input: UpdatePermissionOverridesDto,
   ) {
-    const normalized = await this.normalizeOverridePermissionIds(transaction, input);
+    const normalized = await this.normalizeOverridePermissionIds(
+      transaction,
+      input,
+    );
 
     await transaction.membershipPermissionOverride.deleteMany({
       where: { membershipId },
@@ -1705,7 +1766,10 @@ export class PlatformAdminService {
     platformAccessId: string,
     input: UpdatePermissionOverridesDto,
   ) {
-    const normalized = await this.normalizeOverridePermissionIds(transaction, input);
+    const normalized = await this.normalizeOverridePermissionIds(
+      transaction,
+      input,
+    );
 
     await transaction.platformAccessPermissionOverride.deleteMany({
       where: { platformAccessId },
@@ -1734,7 +1798,10 @@ export class PlatformAdminService {
     }
 
     const requestedKeys = Array.from(new Set([...allowKeys, ...denyKeys]));
-    const permissions = await this.resolvePermissionIds(transaction, requestedKeys);
+    const permissions = await this.resolvePermissionIds(
+      transaction,
+      requestedKeys,
+    );
     const permissionIdByKey = new Map(
       permissions.map((permission) => [permission.key, permission.id]),
     );
@@ -1775,7 +1842,9 @@ export class PlatformAdminService {
       await client.organization.findFirst({
         where: {
           slug: nextSlug,
-          ...(ignoreOrganizationId ? { id: { not: ignoreOrganizationId } } : {}),
+          ...(ignoreOrganizationId
+            ? { id: { not: ignoreOrganizationId } }
+            : {}),
         },
         select: { id: true },
       })
@@ -1873,7 +1942,10 @@ export class PlatformAdminService {
     };
   }
 
-  private handleKnownPrismaErrors(error: unknown, defaultMessage: string): never | void {
+  private handleKnownPrismaErrors(
+    error: unknown,
+    defaultMessage: string,
+  ): never | void {
     if (
       typeof error === 'object' &&
       error !== null &&

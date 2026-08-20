@@ -56,7 +56,11 @@ export class ConsumerAuthController {
       const refreshToken = extractRefreshTokenFromRequest(request);
       const session = await this.authService.refresh(refreshToken);
 
-      writeRefreshTokenCookie(response, this.configService, session.refreshToken);
+      writeRefreshTokenCookie(
+        response,
+        this.configService,
+        session.refreshToken,
+      );
 
       return toPublicAuthSessionResponse(session);
     } catch (error) {

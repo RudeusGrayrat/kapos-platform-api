@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CashMovementType,
   CashRegisterStatus,
@@ -28,7 +32,10 @@ export class CashService {
   }
 
   async createRegister(organizationId: string, input: CreateCashRegisterDto) {
-    await this.ensureBranchBelongsToOrganization(organizationId, input.branchId);
+    await this.ensureBranchBelongsToOrganization(
+      organizationId,
+      input.branchId,
+    );
 
     return this.prismaService.cashRegister.create({
       data: {
@@ -36,7 +43,7 @@ export class CashService {
         branchId: input.branchId,
         code: input.code.toLowerCase(),
         name: input.name,
-        status: (input.status ?? 'ACTIVE') as CashRegisterStatus,
+        status: input.status ?? 'ACTIVE',
         sortOrder: input.sortOrder ?? 0,
       },
       include: {
@@ -52,7 +59,10 @@ export class CashService {
     input: UpdateCashRegisterDto,
   ) {
     if (input.branchId) {
-      await this.ensureBranchBelongsToOrganization(organizationId, input.branchId);
+      await this.ensureBranchBelongsToOrganization(
+        organizationId,
+        input.branchId,
+      );
     }
 
     return this.prismaService.cashRegister.update({
@@ -61,7 +71,7 @@ export class CashService {
         branchId: input.branchId,
         code: input.code?.toLowerCase(),
         name: input.name,
-        status: input.status as CashRegisterStatus | undefined,
+        status: input.status,
         sortOrder: input.sortOrder,
       },
       include: {
@@ -87,10 +97,20 @@ export class CashService {
       ...(search
         ? {
             OR: [
-              { cashRegister: { name: { contains: search, mode: 'insensitive' } } },
-              { cashRegister: { code: { contains: search, mode: 'insensitive' } } },
+              {
+                cashRegister: {
+                  name: { contains: search, mode: 'insensitive' },
+                },
+              },
+              {
+                cashRegister: {
+                  code: { contains: search, mode: 'insensitive' },
+                },
+              },
               { branch: { name: { contains: search, mode: 'insensitive' } } },
-              { openedBy: { email: { contains: search, mode: 'insensitive' } } },
+              {
+                openedBy: { email: { contains: search, mode: 'insensitive' } },
+              },
             ],
           }
         : {}),
@@ -115,12 +135,17 @@ export class CashService {
     };
   }
 
-  async getOpenSession(organizationId: string, cashRegisterId?: string) {
+  async getOpenSession(
+    organizationId: string,
+    cashRegisterId?: string,
+    branchId?: string,
+  ) {
     const session = await this.prismaService.cashSession.findFirst({
       where: {
         organizationId,
         status: CashSessionStatus.OPEN,
         cashRegisterId,
+        branchId,
       },
       orderBy: { openedAt: 'desc' },
       include: this.sessionInclude(),
@@ -178,14 +203,21 @@ export class CashService {
   }
 
   async listMovements(organizationId: string, cashSessionId: string) {
-    await this.ensureSessionBelongsToOrganization(organizationId, cashSessionId);
+    await this.ensureSessionBelongsToOrganization(
+      organizationId,
+      cashSessionId,
+    );
 
     const movements = await this.prismaService.cashMovement.findMany({
       where: { cashSessionId },
       orderBy: [{ occurredAt: 'desc' }],
       include: {
-        paymentMethod: { select: { id: true, name: true, code: true, type: true } },
-        createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+        paymentMethod: {
+          select: { id: true, name: true, code: true, type: true },
+        },
+        createdBy: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
 
@@ -225,14 +257,18 @@ export class CashService {
         cashSessionId,
         paymentMethodId: input.paymentMethodId,
         createdByUserId: userId,
-        type: input.type as CashMovementType,
+        type: input.type,
         amount: new Prisma.Decimal(input.amount),
         concept: input.concept,
         note: input.note,
       },
       include: {
-        paymentMethod: { select: { id: true, name: true, code: true, type: true } },
-        createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+        paymentMethod: {
+          select: { id: true, name: true, code: true, type: true },
+        },
+        createdBy: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
       },
     });
 
@@ -310,7 +346,9 @@ export class CashService {
     });
 
     if (!branch) {
-      throw new NotFoundException('La sucursal no pertenece a la organizacion.');
+      throw new NotFoundException(
+        'La sucursal no pertenece a la organizacion.',
+      );
     }
   }
 
@@ -340,21 +378,33 @@ export class CashService {
     });
 
     if (!session) {
-      throw new NotFoundException('La sesion de caja no pertenece a la organizacion.');
+      throw new NotFoundException(
+        'La sesion de caja no pertenece a la organizacion.',
+      );
     }
   }
 
   private sessionInclude() {
     return {
       branch: { select: { id: true, name: true, code: true } },
-      cashRegister: { select: { id: true, name: true, code: true, status: true } },
-      openedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-      closedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      cashRegister: {
+        select: { id: true, name: true, code: true, status: true },
+      },
+      openedBy: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
+      closedBy: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
       movements: {
         orderBy: { occurredAt: 'desc' as const },
         include: {
-          paymentMethod: { select: { id: true, name: true, code: true, type: true } },
-          createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+          paymentMethod: {
+            select: { id: true, name: true, code: true, type: true },
+          },
+          createdBy: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
         },
       },
     };

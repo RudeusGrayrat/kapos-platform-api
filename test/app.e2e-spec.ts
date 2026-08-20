@@ -60,7 +60,7 @@ class TestHealthController {
     },
   ],
 })
-class TestAppModule { }
+class TestAppModule {}
 
 describe('Auth HTTP cookies (e2e)', () => {
   let app: INestApplication;
@@ -86,13 +86,10 @@ describe('Auth HTTP cookies (e2e)', () => {
   });
 
   it('keeps the health endpoint working', () => {
-    return request(app.getHttpServer())
-      .get('/api')
-      .expect(200)
-      .expect({
-        status: 'ok',
-        service: 'basti-backend',
-      });
+    return request(app.getHttpServer()).get('/api').expect(200).expect({
+      status: 'ok',
+      service: 'basti-backend',
+    });
   });
 
   it('registers through consumer auth, returns access token in JSON and refresh token in an HTTP-only cookie', async () => {

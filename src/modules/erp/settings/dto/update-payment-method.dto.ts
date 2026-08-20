@@ -1,4 +1,10 @@
-import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdatePaymentMethodDto {
   @IsOptional()
@@ -13,7 +19,8 @@ export class UpdatePaymentMethodDto {
 
   @IsOptional()
   @IsIn(['CASH', 'CARD', 'DIGITAL_WALLET', 'BANK_TRANSFER', 'CREDIT', 'OTHER'])
-  type?: 'CASH' | 'CARD' | 'DIGITAL_WALLET' | 'BANK_TRANSFER' | 'CREDIT' | 'OTHER';
+  type?:
+    'CASH' | 'CARD' | 'DIGITAL_WALLET' | 'BANK_TRANSFER' | 'CREDIT' | 'OTHER';
 
   @IsOptional()
   @IsBoolean()

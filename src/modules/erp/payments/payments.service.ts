@@ -20,7 +20,9 @@ export class PaymentsService {
       });
 
       if (!branch) {
-        throw new BadRequestException('La sucursal no pertenece a la organizacion.');
+        throw new BadRequestException(
+          'La sucursal no pertenece a la organizacion.',
+        );
       }
     }
 
@@ -127,7 +129,9 @@ export class PaymentsService {
     }
 
     if (intent.saleId) {
-      throw new BadRequestException('El intento de pago ya fue usado en una venta.');
+      throw new BadRequestException(
+        'El intento de pago ya fue usado en una venta.',
+      );
     }
 
     if (intent.status !== PaymentIntentStatus.PENDING) {

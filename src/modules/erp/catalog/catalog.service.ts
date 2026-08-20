@@ -168,10 +168,12 @@ export class CatalogService {
           sku,
           name: input.name,
           description: input.description,
-          type: (input.type ?? 'PRODUCT') as ProductType,
+          type: input.type ?? 'PRODUCT',
           price: new Prisma.Decimal(input.price ?? 0),
           cost:
-            input.cost === undefined ? undefined : new Prisma.Decimal(input.cost),
+            input.cost === undefined
+              ? undefined
+              : new Prisma.Decimal(input.cost),
           taxRate:
             input.taxRate === undefined
               ? undefined
@@ -217,11 +219,16 @@ export class CatalogService {
           sku,
           name: input.name,
           description: input.description,
-          type: input.type as ProductType | undefined,
-          status: input.status as ProductStatus | undefined,
+          type: input.type,
+          status: input.status,
           price:
-            input.price === undefined ? undefined : new Prisma.Decimal(input.price),
-          cost: input.cost === undefined ? undefined : new Prisma.Decimal(input.cost),
+            input.price === undefined
+              ? undefined
+              : new Prisma.Decimal(input.price),
+          cost:
+            input.cost === undefined
+              ? undefined
+              : new Prisma.Decimal(input.cost),
           taxRate:
             input.taxRate === undefined
               ? undefined
@@ -277,6 +284,20 @@ export class CatalogService {
 
     const quantity = new Prisma.Decimal(input.quantity);
     const minQuantity = new Prisma.Decimal(input.minQuantity ?? 0);
+    const currentStock = await this.prismaService.productStock.findUnique({
+      where: {
+        productId_branchId: {
+          productId: product.id,
+          branchId: branch.id,
+        },
+      },
+      select: { reservedQuantity: true },
+    });
+    if (currentStock?.reservedQuantity.greaterThan(quantity)) {
+      throw new BadRequestException(
+        `No puedes reducir el stock por debajo de ${currentStock.reservedQuantity.toString()} unidades reservadas en cuentas abiertas.`,
+      );
+    }
 
     const stockItem = await this.prismaService.productStock.upsert({
       where: {
@@ -306,7 +327,10 @@ export class CatalogService {
     return this.serializeStock(stockItem);
   }
 
-  private resolveStockStatus(quantity: Prisma.Decimal, minQuantity: Prisma.Decimal) {
+  private resolveStockStatus(
+    quantity: Prisma.Decimal,
+    minQuantity: Prisma.Decimal,
+  ) {
     if (quantity.lessThanOrEqualTo(0)) {
       return StockStatus.OUT;
     }
@@ -422,6 +446,7 @@ export class CatalogService {
     taxRate: Prisma.Decimal | null;
     stockItems: Array<{
       quantity: Prisma.Decimal;
+      reservedQuantity: Prisma.Decimal;
       minQuantity: Prisma.Decimal;
       [key: string]: unknown;
     }>;
@@ -440,12 +465,17 @@ export class CatalogService {
 
   private serializeStock(stockItem: {
     quantity: Prisma.Decimal;
+    reservedQuantity: Prisma.Decimal;
     minQuantity: Prisma.Decimal;
     [key: string]: unknown;
   }) {
     return {
       ...stockItem,
       quantity: Number(stockItem.quantity),
+      reservedQuantity: Number(stockItem.reservedQuantity),
+      availableQuantity: Number(
+        stockItem.quantity.minus(stockItem.reservedQuantity),
+      ),
       minQuantity: Number(stockItem.minQuantity),
     };
   }

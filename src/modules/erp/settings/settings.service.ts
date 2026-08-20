@@ -1,5 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { BranchStatus, PaymentMethodType, Prisma } from '../../../database/prisma/generated/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BranchStatus,
+  PaymentMethodType,
+  Prisma,
+} from '../../../database/prisma/generated/client';
 import { PrismaService } from '../../../database/prisma/prisma.service';
 import { CreateBranchDto } from './dto/create-branch.dto';
 import { CreatePaymentMethodDto } from './dto/create-payment-method.dto';
@@ -108,7 +112,11 @@ export class SettingsService {
     });
   }
 
-  updateBranch(organizationId: string, branchId: string, input: UpdateBranchDto) {
+  updateBranch(
+    organizationId: string,
+    branchId: string,
+    input: UpdateBranchDto,
+  ) {
     return this.prismaService.branch.update({
       where: { id: branchId, organizationId },
       data: {
@@ -116,7 +124,7 @@ export class SettingsService {
         name: input.name,
         address: input.address,
         phone: input.phone,
-        status: input.status as BranchStatus | undefined,
+        status: input.status,
       },
     });
   }
@@ -134,7 +142,7 @@ export class SettingsService {
         organizationId,
         code: input.code.toLowerCase(),
         name: input.name,
-        type: input.type as PaymentMethodType,
+        type: input.type,
         enabled: input.enabled ?? true,
         sortOrder: input.sortOrder ?? 0,
       },
@@ -151,11 +159,50 @@ export class SettingsService {
       data: {
         code: input.code?.toLowerCase(),
         name: input.name,
-        type: input.type as PaymentMethodType | undefined,
+        type: input.type,
         enabled: input.enabled,
         sortOrder: input.sortOrder,
       },
     });
+  }
+
+  async deletePaymentMethod(organizationId: string, paymentMethodId: string) {
+    const paymentMethod = await this.prismaService.paymentMethod.findFirst({
+      where: { id: paymentMethodId, organizationId },
+      select: {
+        id: true,
+        _count: {
+          select: {
+            cashMovements: true,
+            salePayments: true,
+            paymentIntents: true,
+            openAccountPayments: true,
+          },
+        },
+      },
+    });
+
+    if (!paymentMethod) {
+      throw new NotFoundException('El metodo de pago no existe.');
+    }
+
+    const usageCount =
+      paymentMethod._count.cashMovements +
+      paymentMethod._count.salePayments +
+      paymentMethod._count.paymentIntents +
+      paymentMethod._count.openAccountPayments;
+
+    if (usageCount > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar un metodo de pago con operaciones asociadas. Puedes desactivarlo.',
+      );
+    }
+
+    await this.prismaService.paymentMethod.delete({
+      where: { id: paymentMethod.id },
+    });
+
+    return { ok: true };
   }
 
   private serializeSettings(settings: {

@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { hash } from 'bcryptjs';
 import {
   DocumentType,
@@ -38,9 +42,15 @@ export class OrganizationAdminService {
               { title: { contains: search, mode: 'insensitive' } },
               { employeeCode: { contains: search, mode: 'insensitive' } },
               { user: { email: { contains: search, mode: 'insensitive' } } },
-              { user: { firstName: { contains: search, mode: 'insensitive' } } },
+              {
+                user: { firstName: { contains: search, mode: 'insensitive' } },
+              },
               { user: { lastName: { contains: search, mode: 'insensitive' } } },
-              { user: { documentNumber: { contains: search, mode: 'insensitive' } } },
+              {
+                user: {
+                  documentNumber: { contains: search, mode: 'insensitive' },
+                },
+              },
             ],
           }
         : {}),
@@ -58,7 +68,9 @@ export class OrganizationAdminService {
     ]);
 
     return {
-      data: memberships.map((membership) => this.serializeMembership(membership)),
+      data: memberships.map((membership) =>
+        this.serializeMembership(membership),
+      ),
       total,
       page,
       limit,
@@ -70,79 +82,88 @@ export class OrganizationAdminService {
     allowedPermissionKeys: string[],
     input: CreateOrganizationUserDto,
   ) {
-    return this.prismaService.$transaction(async (transaction) => {
-      await this.assertRolesCanBeAssigned(
-        transaction,
-        organizationId,
-        input.roleScopeKeys ?? [],
-        allowedPermissionKeys,
-      );
+    return this.prismaService
+      .$transaction(async (transaction) => {
+        await this.assertRolesCanBeAssigned(
+          transaction,
+          organizationId,
+          input.roleScopeKeys ?? [],
+          allowedPermissionKeys,
+        );
 
-      const existingUser = await transaction.user.findFirst({
-        where: {
-          OR: [
-            { email: input.email },
-            ...(input.documentNumber ? [{ documentNumber: input.documentNumber }] : []),
-          ],
-        },
-        select: { id: true },
-      });
-
-      const user =
-        existingUser ??
-        (await transaction.user.create({
-          data: {
-            email: input.email,
-            passwordHash: input.password ? await hash(input.password, 12) : null,
-            firstName: input.firstName ?? null,
-            lastName: input.lastName ?? null,
-            documentType: input.documentNumber
-              ? input.documentType ?? DocumentType.DNI
-              : null,
-            documentNumber: input.documentNumber ?? null,
-            phone: input.phone ?? null,
-            status:
-              input.userStatus ??
-              (input.password ? UserStatus.ACTIVE : UserStatus.INVITED),
+        const existingUser = await transaction.user.findFirst({
+          where: {
+            OR: [
+              { email: input.email },
+              ...(input.documentNumber
+                ? [{ documentNumber: input.documentNumber }]
+                : []),
+            ],
           },
           select: { id: true },
-        }));
+        });
 
-      const membership = await transaction.membership.upsert({
-        where: {
-          userId_organizationId: {
+        const user =
+          existingUser ??
+          (await transaction.user.create({
+            data: {
+              email: input.email,
+              passwordHash: input.password
+                ? await hash(input.password, 12)
+                : null,
+              firstName: input.firstName ?? null,
+              lastName: input.lastName ?? null,
+              documentType: input.documentNumber
+                ? (input.documentType ?? DocumentType.DNI)
+                : null,
+              documentNumber: input.documentNumber ?? null,
+              phone: input.phone ?? null,
+              status:
+                input.userStatus ??
+                (input.password ? UserStatus.ACTIVE : UserStatus.INVITED),
+            },
+            select: { id: true },
+          }));
+
+        const membership = await transaction.membership.upsert({
+          where: {
+            userId_organizationId: {
+              userId: user.id,
+              organizationId,
+            },
+          },
+          update: {
+            status: input.membershipStatus ?? MembershipStatus.ACTIVE,
+            title: input.title,
+            employeeCode: input.employeeCode,
+            endsAt: null,
+          },
+          create: {
             userId: user.id,
             organizationId,
+            status: input.membershipStatus ?? MembershipStatus.ACTIVE,
+            title: input.title,
+            employeeCode: input.employeeCode,
           },
-        },
-        update: {
-          status: input.membershipStatus ?? MembershipStatus.ACTIVE,
-          title: input.title,
-          employeeCode: input.employeeCode,
-          endsAt: null,
-        },
-        create: {
-          userId: user.id,
+          select: { id: true },
+        });
+
+        await this.replaceMembershipRoles(
+          transaction,
           organizationId,
-          status: input.membershipStatus ?? MembershipStatus.ACTIVE,
-          title: input.title,
-          employeeCode: input.employeeCode,
-        },
-        select: { id: true },
+          membership.id,
+          input.roleScopeKeys ?? [],
+        );
+
+        return this.findMembershipSummary(transaction, membership.id);
+      })
+      .catch((error) => {
+        this.handleKnownPrismaErrors(
+          error,
+          'No se pudo crear o vincular el usuario.',
+        );
+        throw error;
       });
-
-      await this.replaceMembershipRoles(
-        transaction,
-        organizationId,
-        membership.id,
-        input.roleScopeKeys ?? [],
-      );
-
-      return this.findMembershipSummary(transaction, membership.id);
-    }).catch((error) => {
-      this.handleKnownPrismaErrors(error, 'No se pudo crear o vincular el usuario.');
-      throw error;
-    });
   }
 
   async updateUser(
@@ -151,54 +172,59 @@ export class OrganizationAdminService {
     allowedPermissionKeys: string[],
     input: UpdateOrganizationUserDto,
   ) {
-    return this.prismaService.$transaction(async (transaction) => {
-      const membership = await transaction.membership.findFirst({
-        where: { id: membershipId, organizationId },
-        select: { id: true, userId: true },
-      });
+    return this.prismaService
+      .$transaction(async (transaction) => {
+        const membership = await transaction.membership.findFirst({
+          where: { id: membershipId, organizationId },
+          select: { id: true, userId: true },
+        });
 
-      if (!membership) {
-        throw new NotFoundException('No se encontro el usuario interno.');
-      }
+        if (!membership) {
+          throw new NotFoundException('No se encontro el usuario interno.');
+        }
 
-      if (input.roleScopeKeys) {
-        await this.assertRolesCanBeAssigned(
-          transaction,
-          organizationId,
-          input.roleScopeKeys,
-          allowedPermissionKeys,
+        if (input.roleScopeKeys) {
+          await this.assertRolesCanBeAssigned(
+            transaction,
+            organizationId,
+            input.roleScopeKeys,
+            allowedPermissionKeys,
+          );
+        }
+
+        await transaction.membership.update({
+          where: { id: membership.id },
+          data: {
+            title: input.title,
+            employeeCode: input.employeeCode,
+            status: input.membershipStatus,
+            endsAt:
+              input.membershipStatus === MembershipStatus.TERMINATED
+                ? new Date()
+                : input.membershipStatus === MembershipStatus.ACTIVE
+                  ? null
+                  : undefined,
+          },
+        });
+
+        if (input.roleScopeKeys) {
+          await this.replaceMembershipRoles(
+            transaction,
+            organizationId,
+            membership.id,
+            input.roleScopeKeys,
+          );
+        }
+
+        return this.findMembershipSummary(transaction, membership.id);
+      })
+      .catch((error) => {
+        this.handleKnownPrismaErrors(
+          error,
+          'No se pudo actualizar el usuario interno.',
         );
-      }
-
-      await transaction.membership.update({
-        where: { id: membership.id },
-        data: {
-          title: input.title,
-          employeeCode: input.employeeCode,
-          status: input.membershipStatus,
-          endsAt:
-            input.membershipStatus === MembershipStatus.TERMINATED
-              ? new Date()
-              : input.membershipStatus === MembershipStatus.ACTIVE
-                ? null
-                : undefined,
-        },
+        throw error;
       });
-
-      if (input.roleScopeKeys) {
-        await this.replaceMembershipRoles(
-          transaction,
-          organizationId,
-          membership.id,
-          input.roleScopeKeys,
-        );
-      }
-
-      return this.findMembershipSummary(transaction, membership.id);
-    }).catch((error) => {
-      this.handleKnownPrismaErrors(error, 'No se pudo actualizar el usuario interno.');
-      throw error;
-    });
   }
 
   updateUserStatus(
@@ -273,10 +299,7 @@ export class OrganizationAdminService {
       where: {
         key: { in: input.allowedPermissionKeys },
         audience: { in: [ModuleAudience.ORGANIZATION, ModuleAudience.BOTH] },
-        OR: [
-          { moduleKey: null },
-          { moduleKey: { in: input.moduleKeys } },
-        ],
+        OR: [{ moduleKey: null }, { moduleKey: { in: input.moduleKeys } }],
       },
       orderBy: [{ moduleKey: 'asc' }, { submoduleKey: 'asc' }, { key: 'asc' }],
     });
@@ -294,39 +317,41 @@ export class OrganizationAdminService {
       allowedPermissionKeys,
     );
 
-    return this.prismaService.$transaction(async (transaction) => {
-      const permissions = await this.resolvePermissionIds(
-        transaction,
-        input.permissionKeys ?? [],
-      );
-      const role = await transaction.role.create({
-        data: {
-          context: RoleContext.ORGANIZATION,
-          scopeKey: `organization:${organizationId}:${input.key}`,
-          organizationId,
-          key: input.key,
-          name: input.name,
-          description: input.description ?? null,
-          isSystem: false,
-          status: RoleStatus.ACTIVE,
-        },
-        select: { id: true },
-      });
-
-      if (permissions.length > 0) {
-        await transaction.rolePermission.createMany({
-          data: permissions.map((permission) => ({
-            roleId: role.id,
-            permissionId: permission.id,
-          })),
+    return this.prismaService
+      .$transaction(async (transaction) => {
+        const permissions = await this.resolvePermissionIds(
+          transaction,
+          input.permissionKeys ?? [],
+        );
+        const role = await transaction.role.create({
+          data: {
+            context: RoleContext.ORGANIZATION,
+            scopeKey: `organization:${organizationId}:${input.key}`,
+            organizationId,
+            key: input.key,
+            name: input.name,
+            description: input.description ?? null,
+            isSystem: false,
+            status: RoleStatus.ACTIVE,
+          },
+          select: { id: true },
         });
-      }
 
-      return this.findRoleSummary(transaction, role.id);
-    }).catch((error) => {
-      this.handleKnownPrismaErrors(error, 'No se pudo crear el rol interno.');
-      throw error;
-    });
+        if (permissions.length > 0) {
+          await transaction.rolePermission.createMany({
+            data: permissions.map((permission) => ({
+              roleId: role.id,
+              permissionId: permission.id,
+            })),
+          });
+        }
+
+        return this.findRoleSummary(transaction, role.id);
+      })
+      .catch((error) => {
+        this.handleKnownPrismaErrors(error, 'No se pudo crear el rol interno.');
+        throw error;
+      });
   }
 
   async updateRole(
@@ -336,56 +361,66 @@ export class OrganizationAdminService {
     input: UpdateInternalRoleDto,
   ) {
     if (input.permissionKeys) {
-      this.assertPermissionKeysAreDelegable(input.permissionKeys, allowedPermissionKeys);
+      this.assertPermissionKeysAreDelegable(
+        input.permissionKeys,
+        allowedPermissionKeys,
+      );
     }
 
-    return this.prismaService.$transaction(async (transaction) => {
-      const role = await transaction.role.findFirst({
-        where: {
-          id: roleId,
-          organizationId,
-          context: RoleContext.ORGANIZATION,
-          isSystem: false,
-          status: RoleStatus.ACTIVE,
-        },
-        select: { id: true },
-      });
+    return this.prismaService
+      .$transaction(async (transaction) => {
+        const role = await transaction.role.findFirst({
+          where: {
+            id: roleId,
+            organizationId,
+            context: RoleContext.ORGANIZATION,
+            isSystem: false,
+            status: RoleStatus.ACTIVE,
+          },
+          select: { id: true },
+        });
 
-      if (!role) {
-        throw new NotFoundException('No se encontro un rol personalizado editable.');
-      }
-
-      if (input.permissionKeys) {
-        const permissions = await this.resolvePermissionIds(
-          transaction,
-          input.permissionKeys,
-        );
-
-        await transaction.rolePermission.deleteMany({ where: { roleId } });
-
-        if (permissions.length > 0) {
-          await transaction.rolePermission.createMany({
-            data: permissions.map((permission) => ({
-              roleId,
-              permissionId: permission.id,
-            })),
-          });
+        if (!role) {
+          throw new NotFoundException(
+            'No se encontro un rol personalizado editable.',
+          );
         }
-      }
 
-      await transaction.role.update({
-        where: { id: roleId },
-        data: {
-          name: input.name,
-          description: input.description,
-        },
+        if (input.permissionKeys) {
+          const permissions = await this.resolvePermissionIds(
+            transaction,
+            input.permissionKeys,
+          );
+
+          await transaction.rolePermission.deleteMany({ where: { roleId } });
+
+          if (permissions.length > 0) {
+            await transaction.rolePermission.createMany({
+              data: permissions.map((permission) => ({
+                roleId,
+                permissionId: permission.id,
+              })),
+            });
+          }
+        }
+
+        await transaction.role.update({
+          where: { id: roleId },
+          data: {
+            name: input.name,
+            description: input.description,
+          },
+        });
+
+        return this.findRoleSummary(transaction, roleId);
+      })
+      .catch((error) => {
+        this.handleKnownPrismaErrors(
+          error,
+          'No se pudo actualizar el rol interno.',
+        );
+        throw error;
       });
-
-      return this.findRoleSummary(transaction, roleId);
-    }).catch((error) => {
-      this.handleKnownPrismaErrors(error, 'No se pudo actualizar el rol interno.');
-      throw error;
-    });
   }
 
   async archiveRole(organizationId: string, roleId: string) {
@@ -400,7 +435,9 @@ export class OrganizationAdminService {
     });
 
     if (!role) {
-      throw new NotFoundException('No se encontro un rol personalizado archivable.');
+      throw new NotFoundException(
+        'No se encontro un rol personalizado archivable.',
+      );
     }
 
     await this.prismaService.role.update({
@@ -434,7 +471,9 @@ export class OrganizationAdminService {
     });
 
     if (roles.length !== roleScopeKeys.length) {
-      throw new NotFoundException('Uno o mas roles no existen o no pertenecen a la organizacion.');
+      throw new NotFoundException(
+        'Uno o mas roles no existen o no pertenecen a la organizacion.',
+      );
     }
 
     await transaction.membershipRole.createMany({
@@ -472,7 +511,9 @@ export class OrganizationAdminService {
     });
 
     if (roles.length !== roleScopeKeys.length) {
-      throw new NotFoundException('Uno o mas roles no existen o no pertenecen a la organizacion.');
+      throw new NotFoundException(
+        'Uno o mas roles no existen o no pertenecen a la organizacion.',
+      );
     }
 
     for (const role of roles) {
@@ -636,8 +677,11 @@ export class OrganizationAdminService {
       permission: { key: string };
     }>;
   }) {
-    const rolePermissionKeys = membership.roleAssignments.flatMap((assignment) =>
-      assignment.role.permissions.map((rolePermission) => rolePermission.permission.key),
+    const rolePermissionKeys = membership.roleAssignments.flatMap(
+      (assignment) =>
+        assignment.role.permissions.map(
+          (rolePermission) => rolePermission.permission.key,
+        ),
     );
     const allowPermissionKeys = membership.permissionOverrides
       .filter((override) => override.effect === PermissionOverrideEffect.ALLOW)
@@ -715,15 +759,22 @@ export class OrganizationAdminService {
       status: role.status,
       permissionCount: role._count.permissions,
       memberCount: role._count.membershipRoles,
-      permissionKeys: role.permissions.map((assignment) => assignment.permission.key),
+      permissionKeys: role.permissions.map(
+        (assignment) => assignment.permission.key,
+      ),
       permissions: role.permissions.map((assignment) => assignment.permission),
     };
   }
 
-  private handleKnownPrismaErrors(error: unknown, fallbackMessage: string): never {
+  private handleKnownPrismaErrors(
+    error: unknown,
+    fallbackMessage: string,
+  ): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
-        throw new ConflictException('Ya existe un registro con esos datos unicos.');
+        throw new ConflictException(
+          'Ya existe un registro con esos datos unicos.',
+        );
       }
 
       if (error.code === 'P2025') {

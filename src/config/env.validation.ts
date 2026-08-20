@@ -22,7 +22,9 @@ export function validateEnv(config: EnvRecord): EnvRecord {
   const parsedPort = Number.parseInt(String(config.PORT), 10);
 
   if (Number.isNaN(parsedPort) || parsedPort <= 0) {
-    throw new Error('Environment variable PORT must be a valid positive number.');
+    throw new Error(
+      'Environment variable PORT must be a valid positive number.',
+    );
   }
 
   return config;

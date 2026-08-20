@@ -5,7 +5,6 @@ export const OrganizationContext = createParamDecorator(
   (_data: unknown, context: ExecutionContext) => {
     const request = context.switchToHttp().getRequest();
     return request.organizationContext as
-      | OrganizationAuthorizationContext
-      | undefined;
+      OrganizationAuthorizationContext | undefined;
   },
 );

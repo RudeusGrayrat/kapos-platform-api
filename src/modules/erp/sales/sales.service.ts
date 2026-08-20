@@ -44,14 +44,21 @@ export class SalesService {
               { saleNumber: { contains: search, mode: 'insensitive' } },
               { note: { contains: search, mode: 'insensitive' } },
               { branch: { name: { contains: search, mode: 'insensitive' } } },
-              { createdBy: { email: { contains: search, mode: 'insensitive' } } },
+              {
+                createdBy: { email: { contains: search, mode: 'insensitive' } },
+              },
               {
                 customerProfile: {
                   user: {
                     OR: [
                       { firstName: { contains: search, mode: 'insensitive' } },
                       { lastName: { contains: search, mode: 'insensitive' } },
-                      { documentNumber: { contains: search, mode: 'insensitive' } },
+                      {
+                        documentNumber: {
+                          contains: search,
+                          mode: 'insensitive',
+                        },
+                      },
                     ],
                   },
                 },
@@ -87,7 +94,11 @@ export class SalesService {
     };
   }
 
-  async createSale(organizationId: string, userId: string, input: CreateSaleDto) {
+  async createSale(
+    organizationId: string,
+    userId: string,
+    input: CreateSaleDto,
+  ) {
     return this.prismaService.$transaction(async (transaction) => {
       const cashSession = await transaction.cashSession.findFirst({
         where: {
@@ -134,7 +145,9 @@ export class SalesService {
           },
         },
       });
-      const productsById = new Map(products.map((product) => [product.id, product]));
+      const productsById = new Map(
+        products.map((product) => [product.id, product]),
+      );
 
       if (products.length !== productIds.length) {
         throw new BadRequestException(
@@ -178,7 +191,7 @@ export class SalesService {
         const lineTotal = lineGross.minus(discountAmount);
         const taxRate = product.taxRate ?? new Prisma.Decimal(0);
         const taxAmount = taxRate.greaterThan(0)
-          ? lineTotal.mul(taxRate).div(100)
+          ? lineTotal.mul(taxRate).div(taxRate.plus(100))
           : new Prisma.Decimal(0);
 
         subtotal = subtotal.plus(lineGross);
@@ -199,7 +212,10 @@ export class SalesService {
         });
       }
 
-      const loyaltyPointsToRedeem = Math.max(0, input.loyaltyPointsToRedeem ?? 0);
+      const loyaltyPointsToRedeem = Math.max(
+        0,
+        input.loyaltyPointsToRedeem ?? 0,
+      );
       const loyaltyDiscount = new Prisma.Decimal(loyaltyPointsToRedeem);
 
       if (loyaltyPointsToRedeem > 0 && !input.customerProfileId) {
@@ -228,7 +244,9 @@ export class SalesService {
       const total = subtotal.minus(discountTotal);
 
       if (total.lessThanOrEqualTo(0)) {
-        throw new BadRequestException('El total de la venta debe ser mayor a cero.');
+        throw new BadRequestException(
+          'El total de la venta debe ser mayor a cero.',
+        );
       }
 
       const confirmedPaidTotal = input.payments.reduce((sum, payment) => {
@@ -245,7 +263,10 @@ export class SalesService {
         );
       }
 
-      const saleNumber = await this.createSaleNumber(organizationId, transaction);
+      const saleNumber = await this.createSaleNumber(
+        organizationId,
+        transaction,
+      );
       const sale = await transaction.sale.create({
         data: {
           organizationId,
@@ -254,7 +275,7 @@ export class SalesService {
           customerProfileId: input.customerProfileId,
           createdByUserId: userId,
           saleNumber,
-          channel: (input.channel ?? 'WEB_POS') as SaleChannel,
+          channel: input.channel ?? 'WEB_POS',
           billingStatus: BillingStatus.PENDING,
           subtotal,
           taxTotal,
@@ -267,7 +288,7 @@ export class SalesService {
           billingDocuments: {
             create: {
               organizationId,
-              type: (input.billingDocumentType ?? 'TICKET') as BillingDocumentType,
+              type: input.billingDocumentType ?? 'TICKET',
               status: BillingDocumentStatus.PENDING,
             },
           },
@@ -363,7 +384,10 @@ export class SalesService {
             select: { id: true, amount: true },
           });
 
-          if (!intent || !intent.amount.equals(new Prisma.Decimal(payment.amount))) {
+          if (
+            !intent ||
+            !intent.amount.equals(new Prisma.Decimal(payment.amount))
+          ) {
             throw new BadRequestException(
               'El intento de pago no existe, no esta confirmado o no coincide con el monto.',
             );
@@ -610,7 +634,8 @@ export class SalesService {
               points: redeemed - earned,
               redeemableBalanceAfter: redeemablePoints,
               lifetimeBalanceAfter: lifetimePoints,
-              reason: input.reason ?? `Reversion por anulacion ${sale.saleNumber}`,
+              reason:
+                input.reason ?? `Reversion por anulacion ${sale.saleNumber}`,
             },
           });
         }
@@ -690,7 +715,9 @@ export class SalesService {
           loyaltyWallet: true,
         },
       },
-      createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+      createdBy: {
+        select: { id: true, email: true, firstName: true, lastName: true },
+      },
       cancelledBy: {
         select: { id: true, email: true, firstName: true, lastName: true },
       },
@@ -698,10 +725,17 @@ export class SalesService {
       payments: {
         orderBy: { createdAt: 'asc' as const },
         include: {
-          paymentMethod: { select: { id: true, name: true, code: true, type: true } },
+          paymentMethod: {
+            select: { id: true, name: true, code: true, type: true },
+          },
           cashMovement: { select: { id: true, type: true, amount: true } },
           paymentIntent: {
-            select: { id: true, provider: true, providerRef: true, status: true },
+            select: {
+              id: true,
+              provider: true,
+              providerRef: true,
+              status: true,
+            },
           },
         },
       },

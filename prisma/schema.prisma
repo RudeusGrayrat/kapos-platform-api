@@ -10,6 +10,7 @@ datasource db {
 
 enum DocumentType {
   DNI
+  RUC
   CE
   PASSPORT
 }
@@ -195,38 +196,106 @@ enum BillingDocumentType {
 
 enum BillingDocumentStatus {
   PENDING
+  ISSUING
   BILLED
   FAILED
   CANCELLED
 }
 
+enum BillingProviderEnvironment {
+  TEST
+  PRODUCTION
+}
+
+enum BillingAuthorizationScheme {
+  BEARER
+  RAW
+  TOKEN
+}
+
+enum ServiceType {
+  LOCAL
+  DELIVERY
+  TAKEAWAY
+}
+
+enum OpenAccountStatus {
+  OPEN
+  PARTIALLY_PAID
+  CLOSED
+  CANCELLED
+}
+
+enum OpenAccountItemStatus {
+  ACTIVE
+  CANCELLED
+}
+
+enum KitchenTicketStatus {
+  DRAFT
+  SENT
+  IN_PREPARATION
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum OpenAccountPaymentStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum OpenAccountEventType {
+  OPENED
+  ITEM_ADDED
+  ITEM_CANCELLED
+  KITCHEN_SENT
+  KITCHEN_STATUS_CHANGED
+  TABLE_TRANSFERRED
+  TABLE_JOINED
+  TABLE_RELEASED
+  PREBILL_GENERATED
+  PAYMENT_RECORDED
+  CUSTOMER_ASSIGNED
+  CLOSED
+  CANCELLED
+}
+
 model User {
-  id                 String            @id @default(uuid()) @db.Uuid
-  email              String?           @unique
-  passwordHash       String?
-  documentType       DocumentType?
-  documentNumber     String?           @unique
-  firstName          String?
-  lastName           String?
-  phone              String?
-  avatarUrl          String?
-  emailVerifiedAt    DateTime?
-  documentVerifiedAt DateTime?
-  status             UserStatus        @default(ACTIVE)
-  lastLoginAt        DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  sessions           Session[]
-  oauthAccounts      OAuthAccount[]
-  memberships        Membership[]
-  customerProfiles   CustomerProfile[]
-  platformAccess     PlatformAccess?
-  openedCashSessions CashSession[]     @relation("CashSessionOpenedBy")
-  closedCashSessions CashSession[]     @relation("CashSessionClosedBy")
-  cashMovements      CashMovement[]    @relation("CashMovementCreatedBy")
-  salesCreated       Sale[]            @relation("SaleCreatedBy")
-  salesCancelled     Sale[]            @relation("SaleCancelledBy")
-  stockMovements     StockMovement[]   @relation("StockMovementCreatedBy")
+  id                        String                 @id @default(uuid()) @db.Uuid
+  email                     String?                @unique
+  passwordHash              String?
+  documentType              DocumentType?
+  documentNumber            String?                @unique
+  firstName                 String?
+  lastName                  String?
+  phone                     String?
+  avatarUrl                 String?
+  emailVerifiedAt           DateTime?
+  documentVerifiedAt        DateTime?
+  status                    UserStatus             @default(ACTIVE)
+  lastLoginAt               DateTime?
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  sessions                  Session[]
+  oauthAccounts             OAuthAccount[]
+  memberships               Membership[]
+  customerProfiles          CustomerProfile[]
+  platformAccess            PlatformAccess?
+  openedCashSessions        CashSession[]          @relation("CashSessionOpenedBy")
+  closedCashSessions        CashSession[]          @relation("CashSessionClosedBy")
+  cashMovements             CashMovement[]         @relation("CashMovementCreatedBy")
+  salesCreated              Sale[]                 @relation("SaleCreatedBy")
+  salesCancelled            Sale[]                 @relation("SaleCancelledBy")
+  stockMovements            StockMovement[]        @relation("StockMovementCreatedBy")
+  openAccountsCreated       OpenAccount[]          @relation("OpenAccountCreatedBy")
+  openAccountsClosed        OpenAccount[]          @relation("OpenAccountClosedBy")
+  openAccountItems          OpenAccountItem[]      @relation("OpenAccountItemCreatedBy")
+  kitchenTickets            KitchenTicket[]        @relation("KitchenTicketCreatedBy")
+  openAccountPayments       OpenAccountPayment[]   @relation("OpenAccountPaymentCreatedBy")
+  openAccountEvents         OpenAccountEvent[]     @relation("OpenAccountEventCreatedBy")
+  openAccountItemsCancelled OpenAccountItem[]      @relation("OpenAccountItemCancelledBy")
+  openAccountTableLinks     OpenAccountTableLink[] @relation("OpenAccountTableLinkAssignedBy")
 }
 
 model Session {
@@ -256,58 +325,69 @@ model OAuthAccount {
 }
 
 model Organization {
-  id                String                    @id @default(uuid()) @db.Uuid
-  slug              String                    @unique
-  legalName         String
-  tradeName         String?
-  documentType      OrganizationDocumentType?
-  documentNumber    String?
-  email             String?
-  phone             String?
-  websiteUrl        String?
-  status            OrganizationStatus        @default(ACTIVE)
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  memberships       Membership[]
-  branches          Branch[]
-  roles             Role[]
-  customerProfiles  CustomerProfile[]
-  modules           OrganizationModule[]
-  settings          OrganizationSetting?
-  paymentMethods    PaymentMethod[]
-  productCategories ProductCategory[]
-  products          Product[]
-  cashRegisters     CashRegister[]
-  cashSessions      CashSession[]
-  sales             Sale[]
-  stockMovements    StockMovement[]
-  paymentIntents    PaymentIntent[]
-  billingDocuments  BillingDocument[]
-  loyaltyWallets    LoyaltyWallet[]
-  loyaltyMovements  LoyaltyMovement[]
+  id                  String                    @id @default(uuid()) @db.Uuid
+  slug                String                    @unique
+  legalName           String
+  tradeName           String?
+  documentType        OrganizationDocumentType?
+  documentNumber      String?
+  email               String?
+  phone               String?
+  websiteUrl          String?
+  status              OrganizationStatus        @default(ACTIVE)
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  memberships         Membership[]
+  branches            Branch[]
+  roles               Role[]
+  customerProfiles    CustomerProfile[]
+  modules             OrganizationModule[]
+  settings            OrganizationSetting?
+  paymentMethods      PaymentMethod[]
+  productCategories   ProductCategory[]
+  products            Product[]
+  cashRegisters       CashRegister[]
+  cashSessions        CashSession[]
+  sales               Sale[]
+  stockMovements      StockMovement[]
+  paymentIntents      PaymentIntent[]
+  billingDocuments    BillingDocument[]
+  billingProvider     BillingProviderConfig?
+  billingSeries       BillingSeries[]
+  loyaltyWallets      LoyaltyWallet[]
+  loyaltyMovements    LoyaltyMovement[]
+  diningAreas         DiningArea[]
+  diningTables        DiningTable[]
+  openAccounts        OpenAccount[]
+  openAccountPayments OpenAccountPayment[]
 
   @@index([status])
   @@index([documentNumber])
 }
 
 model Branch {
-  id             String             @id @default(uuid()) @db.Uuid
-  organizationId String             @db.Uuid
-  code           String?
-  name           String
-  address        String?
-  phone          String?
-  status         BranchStatus       @default(ACTIVE)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  memberships    MembershipBranch[]
-  stockItems     ProductStock[]
-  cashRegisters  CashRegister[]
-  cashSessions   CashSession[]
-  sales          Sale[]
-  stockMovements StockMovement[]
-  paymentIntents PaymentIntent[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  organizationId      String               @db.Uuid
+  code                String?
+  name                String
+  address             String?
+  phone               String?
+  status              BranchStatus         @default(ACTIVE)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships         MembershipBranch[]
+  stockItems          ProductStock[]
+  cashRegisters       CashRegister[]
+  cashSessions        CashSession[]
+  sales               Sale[]
+  stockMovements      StockMovement[]
+  paymentIntents      PaymentIntent[]
+  diningAreas         DiningArea[]
+  diningTables        DiningTable[]
+  openAccounts        OpenAccount[]
+  openAccountPayments OpenAccountPayment[]
+  billingSeries       BillingSeries[]
 
   @@unique([organizationId, code])
   @@index([organizationId, status])
@@ -476,6 +556,7 @@ model CustomerProfile {
   sales                Sale[]
   loyaltyWallet        LoyaltyWallet?
   loyaltyMovements     LoyaltyMovement[]
+  openAccounts         OpenAccount[]
 
   @@unique([userId, organizationId])
   @@index([organizationId, status])
@@ -495,19 +576,20 @@ model OrganizationSetting {
 }
 
 model PaymentMethod {
-  id             String            @id @default(uuid()) @db.Uuid
-  organizationId String            @db.Uuid
-  code           String
-  name           String
-  type           PaymentMethodType
-  enabled        Boolean           @default(true)
-  sortOrder      Int               @default(0)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  cashMovements  CashMovement[]
-  salePayments   SalePayment[]
-  paymentIntents PaymentIntent[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  organizationId      String               @db.Uuid
+  code                String
+  name                String
+  type                PaymentMethodType
+  enabled             Boolean              @default(true)
+  sortOrder           Int                  @default(0)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cashMovements       CashMovement[]
+  salePayments        SalePayment[]
+  paymentIntents      PaymentIntent[]
+  openAccountPayments OpenAccountPayment[]
 
   @@unique([organizationId, code])
   @@index([organizationId, enabled, sortOrder])
@@ -536,27 +618,28 @@ model ProductCategory {
 }
 
 model Product {
-  id              String           @id @default(uuid()) @db.Uuid
-  organizationId  String           @db.Uuid
-  categoryId      String?          @db.Uuid
-  sku             String?
-  name            String
-  description     String?
-  type            ProductType      @default(PRODUCT)
-  status          ProductStatus    @default(ACTIVE)
-  price           Decimal          @default(0) @db.Decimal(12, 2)
-  cost            Decimal?         @db.Decimal(12, 2)
-  taxRate         Decimal?         @db.Decimal(5, 2)
-  trackStock      Boolean          @default(true)
-  availableForPos Boolean          @default(true)
-  imageUrl        String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category        ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  stockItems      ProductStock[]
-  saleItems       SaleItem[]
-  stockMovements  StockMovement[]
+  id               String            @id @default(uuid()) @db.Uuid
+  organizationId   String            @db.Uuid
+  categoryId       String?           @db.Uuid
+  sku              String?
+  name             String
+  description      String?
+  type             ProductType       @default(PRODUCT)
+  status           ProductStatus     @default(ACTIVE)
+  price            Decimal           @default(0) @db.Decimal(12, 2)
+  cost             Decimal?          @db.Decimal(12, 2)
+  taxRate          Decimal?          @db.Decimal(5, 2)
+  trackStock       Boolean           @default(true)
+  availableForPos  Boolean           @default(true)
+  imageUrl         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category         ProductCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockItems       ProductStock[]
+  saleItems        SaleItem[]
+  stockMovements   StockMovement[]
+  openAccountItems OpenAccountItem[]
 
   @@unique([organizationId, sku])
   @@index([organizationId, status])
@@ -564,16 +647,17 @@ model Product {
 }
 
 model ProductStock {
-  id          String      @id @default(uuid()) @db.Uuid
-  productId   String      @db.Uuid
-  branchId    String      @db.Uuid
-  quantity    Decimal     @default(0) @db.Decimal(14, 3)
-  minQuantity Decimal     @default(0) @db.Decimal(14, 3)
-  status      StockStatus @default(OK)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  branch      Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  id               String      @id @default(uuid()) @db.Uuid
+  productId        String      @db.Uuid
+  branchId         String      @db.Uuid
+  quantity         Decimal     @default(0) @db.Decimal(14, 3)
+  reservedQuantity Decimal     @default(0) @db.Decimal(14, 3)
+  minQuantity      Decimal     @default(0) @db.Decimal(14, 3)
+  status           StockStatus @default(OK)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  product          Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  branch           Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@unique([productId, branchId])
   @@index([branchId, status])
@@ -623,31 +707,33 @@ model CashRegister {
 }
 
 model CashSession {
-  id               String            @id @default(uuid()) @db.Uuid
-  organizationId   String            @db.Uuid
-  branchId         String            @db.Uuid
-  cashRegisterId   String            @db.Uuid
-  openedByUserId   String            @db.Uuid
-  closedByUserId   String?           @db.Uuid
-  status           CashSessionStatus @default(OPEN)
-  openingAmount    Decimal           @default(0) @db.Decimal(12, 2)
-  expectedAmount   Decimal?          @db.Decimal(12, 2)
-  countedAmount    Decimal?          @db.Decimal(12, 2)
-  differenceAmount Decimal?          @db.Decimal(12, 2)
-  openedAt         DateTime          @default(now())
-  closedAt         DateTime?
-  openingNote      String?
-  closingNote      String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branch           Branch            @relation(fields: [branchId], references: [id], onDelete: Cascade)
-  cashRegister     CashRegister      @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
-  openedBy         User              @relation("CashSessionOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
-  closedBy         User?             @relation("CashSessionClosedBy", fields: [closedByUserId], references: [id], onDelete: Restrict)
-  movements        CashMovement[]
-  sales            Sale[]
-  paymentIntents   PaymentIntent[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  organizationId      String               @db.Uuid
+  branchId            String               @db.Uuid
+  cashRegisterId      String               @db.Uuid
+  openedByUserId      String               @db.Uuid
+  closedByUserId      String?              @db.Uuid
+  status              CashSessionStatus    @default(OPEN)
+  openingAmount       Decimal              @default(0) @db.Decimal(12, 2)
+  expectedAmount      Decimal?             @db.Decimal(12, 2)
+  countedAmount       Decimal?             @db.Decimal(12, 2)
+  differenceAmount    Decimal?             @db.Decimal(12, 2)
+  openedAt            DateTime             @default(now())
+  closedAt            DateTime?
+  openingNote         String?
+  closingNote         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch              Branch               @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  cashRegister        CashRegister         @relation(fields: [cashRegisterId], references: [id], onDelete: Cascade)
+  openedBy            User                 @relation("CashSessionOpenedBy", fields: [openedByUserId], references: [id], onDelete: Restrict)
+  closedBy            User?                @relation("CashSessionClosedBy", fields: [closedByUserId], references: [id], onDelete: Restrict)
+  movements           CashMovement[]
+  sales               Sale[]
+  paymentIntents      PaymentIntent[]
+  openAccounts        OpenAccount[]
+  openAccountPayments OpenAccountPayment[]
 
   @@index([organizationId, status, openedAt])
   @@index([branchId, status])
@@ -655,21 +741,22 @@ model CashSession {
 }
 
 model CashMovement {
-  id              String           @id @default(uuid()) @db.Uuid
-  cashSessionId   String           @db.Uuid
-  paymentMethodId String?          @db.Uuid
-  createdByUserId String           @db.Uuid
-  type            CashMovementType
-  amount          Decimal          @db.Decimal(12, 2)
-  concept         String
-  note            String?
-  occurredAt      DateTime         @default(now())
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  cashSession     CashSession      @relation(fields: [cashSessionId], references: [id], onDelete: Cascade)
-  paymentMethod   PaymentMethod?   @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
-  createdBy       User             @relation("CashMovementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  salePayment     SalePayment?
+  id                 String              @id @default(uuid()) @db.Uuid
+  cashSessionId      String              @db.Uuid
+  paymentMethodId    String?             @db.Uuid
+  createdByUserId    String              @db.Uuid
+  type               CashMovementType
+  amount             Decimal             @db.Decimal(12, 2)
+  concept            String
+  note               String?
+  occurredAt         DateTime            @default(now())
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  cashSession        CashSession         @relation(fields: [cashSessionId], references: [id], onDelete: Cascade)
+  paymentMethod      PaymentMethod?      @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  createdBy          User                @relation("CashMovementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  salePayment        SalePayment?
+  openAccountPayment OpenAccountPayment?
 
   @@index([cashSessionId, type])
   @@index([paymentMethodId])
@@ -712,6 +799,7 @@ model Sale {
   loyaltyMovements  LoyaltyMovement[]
   paymentIntents    PaymentIntent[]
   billingDocuments  BillingDocument[]
+  openAccount       OpenAccount?
 
   @@unique([organizationId, saleNumber])
   @@index([organizationId, soldAt])
@@ -720,6 +808,229 @@ model Sale {
   @@index([customerProfileId])
   @@index([createdByUserId])
   @@index([cancelledByUserId])
+}
+
+model DiningArea {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  branchId       String        @db.Uuid
+  name           String
+  sortOrder      Int           @default(0)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  tables         DiningTable[]
+
+  @@unique([branchId, name])
+  @@index([organizationId, branchId, isActive])
+}
+
+model DiningTable {
+  id             String                 @id @default(uuid()) @db.Uuid
+  organizationId String                 @db.Uuid
+  branchId       String                 @db.Uuid
+  areaId         String                 @db.Uuid
+  code           String
+  name           String
+  capacity       Int                    @default(1)
+  sortOrder      Int                    @default(0)
+  isActive       Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch                 @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  area           DiningArea             @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  openAccounts   OpenAccount[]
+  accountLinks   OpenAccountTableLink[]
+
+  @@unique([branchId, code])
+  @@index([organizationId, branchId, isActive])
+  @@index([areaId, sortOrder])
+}
+
+model OpenAccount {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  organizationId     String                 @db.Uuid
+  branchId           String                 @db.Uuid
+  diningTableId      String?                @db.Uuid
+  customerProfileId  String?                @db.Uuid
+  cashSessionId      String?                @db.Uuid
+  saleId             String?                @unique @db.Uuid
+  createdByUserId    String                 @db.Uuid
+  closedByUserId     String?                @db.Uuid
+  accountNumber      String
+  serviceType        ServiceType
+  status             OpenAccountStatus      @default(OPEN)
+  version            Int                    @default(1)
+  guestCount         Int?
+  customerName       String?
+  customerPhone      String?
+  deliveryAddress    String?
+  deliveryReference  String?
+  note               String?
+  subtotal           Decimal                @default(0) @db.Decimal(12, 2)
+  discountTotal      Decimal                @default(0) @db.Decimal(12, 2)
+  total              Decimal                @default(0) @db.Decimal(12, 2)
+  paidTotal          Decimal                @default(0) @db.Decimal(12, 2)
+  balance            Decimal                @default(0) @db.Decimal(12, 2)
+  openedAt           DateTime               @default(now())
+  closedAt           DateTime?
+  cancelledAt        DateTime?
+  prebillGeneratedAt DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  organization       Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch             Branch                 @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  diningTable        DiningTable?           @relation(fields: [diningTableId], references: [id], onDelete: Restrict)
+  customerProfile    CustomerProfile?       @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
+  cashSession        CashSession?           @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  sale               Sale?                  @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  createdBy          User                   @relation("OpenAccountCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  closedBy           User?                  @relation("OpenAccountClosedBy", fields: [closedByUserId], references: [id], onDelete: Restrict)
+  items              OpenAccountItem[]
+  kitchenTickets     KitchenTicket[]
+  payments           OpenAccountPayment[]
+  events             OpenAccountEvent[]
+  tableLinks         OpenAccountTableLink[]
+
+  @@unique([organizationId, accountNumber])
+  @@index([organizationId, branchId, status, updatedAt])
+  @@index([diningTableId, status])
+  @@index([customerProfileId])
+  @@index([cashSessionId])
+}
+
+model OpenAccountItem {
+  id                 String                         @id @default(uuid()) @db.Uuid
+  openAccountId      String                         @db.Uuid
+  productId          String?                        @db.Uuid
+  kitchenTicketId    String?                        @db.Uuid
+  createdByUserId    String                         @db.Uuid
+  cancelledByUserId  String?                        @db.Uuid
+  productName        String
+  productSku         String?
+  quantity           Decimal                        @db.Decimal(14, 3)
+  unitPrice          Decimal                        @db.Decimal(12, 2)
+  taxRate            Decimal                        @default(0) @db.Decimal(5, 2)
+  taxAmount          Decimal                        @default(0) @db.Decimal(12, 2)
+  discountAmount     Decimal                        @default(0) @db.Decimal(12, 2)
+  total              Decimal                        @db.Decimal(12, 2)
+  note               String?
+  status             OpenAccountItemStatus          @default(ACTIVE)
+  stockReserved      Boolean                        @default(false)
+  cancellationReason String?
+  cancelledAt        DateTime?
+  createdAt          DateTime                       @default(now())
+  updatedAt          DateTime                       @updatedAt
+  openAccount        OpenAccount                    @relation(fields: [openAccountId], references: [id], onDelete: Cascade)
+  product            Product?                       @relation(fields: [productId], references: [id], onDelete: SetNull)
+  kitchenTicket      KitchenTicket?                 @relation(fields: [kitchenTicketId], references: [id], onDelete: SetNull)
+  createdBy          User                           @relation("OpenAccountItemCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  cancelledBy        User?                          @relation("OpenAccountItemCancelledBy", fields: [cancelledByUserId], references: [id], onDelete: Restrict)
+  paymentAllocations OpenAccountPaymentAllocation[]
+
+  @@index([openAccountId, status])
+  @@index([productId])
+  @@index([kitchenTicketId])
+}
+
+model KitchenTicket {
+  id              String              @id @default(uuid()) @db.Uuid
+  openAccountId   String              @db.Uuid
+  createdByUserId String              @db.Uuid
+  sequence        Int
+  status          KitchenTicketStatus @default(SENT)
+  note            String?
+  sentAt          DateTime            @default(now())
+  startedAt       DateTime?
+  readyAt         DateTime?
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  openAccount     OpenAccount         @relation(fields: [openAccountId], references: [id], onDelete: Cascade)
+  createdBy       User                @relation("KitchenTicketCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  items           OpenAccountItem[]
+
+  @@unique([openAccountId, sequence])
+  @@index([status, sentAt])
+}
+
+model OpenAccountPayment {
+  id              String                         @id @default(uuid()) @db.Uuid
+  organizationId  String                         @db.Uuid
+  branchId        String                         @db.Uuid
+  openAccountId   String                         @db.Uuid
+  cashSessionId   String                         @db.Uuid
+  paymentMethodId String?                        @db.Uuid
+  paymentIntentId String?                        @db.Uuid
+  cashMovementId  String?                        @unique @db.Uuid
+  createdByUserId String                         @db.Uuid
+  idempotencyKey  String
+  status          OpenAccountPaymentStatus       @default(CONFIRMED)
+  amount          Decimal                        @db.Decimal(12, 2)
+  provider        String?
+  providerRef     String?
+  createdAt       DateTime                       @default(now())
+  updatedAt       DateTime                       @updatedAt
+  organization    Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch          Branch                         @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  openAccount     OpenAccount                    @relation(fields: [openAccountId], references: [id], onDelete: Cascade)
+  cashSession     CashSession                    @relation(fields: [cashSessionId], references: [id], onDelete: Restrict)
+  paymentMethod   PaymentMethod?                 @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  paymentIntent   PaymentIntent?                 @relation(fields: [paymentIntentId], references: [id], onDelete: SetNull)
+  cashMovement    CashMovement?                  @relation(fields: [cashMovementId], references: [id], onDelete: SetNull)
+  createdBy       User                           @relation("OpenAccountPaymentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  allocations     OpenAccountPaymentAllocation[]
+
+  @@unique([openAccountId, idempotencyKey])
+  @@index([organizationId, branchId, createdAt])
+  @@index([cashSessionId])
+  @@index([paymentIntentId])
+}
+
+model OpenAccountPaymentAllocation {
+  id                   String             @id @default(uuid()) @db.Uuid
+  openAccountPaymentId String             @db.Uuid
+  openAccountItemId    String             @db.Uuid
+  quantity             Decimal            @db.Decimal(14, 3)
+  amount               Decimal            @db.Decimal(12, 2)
+  createdAt            DateTime           @default(now())
+  payment              OpenAccountPayment @relation(fields: [openAccountPaymentId], references: [id], onDelete: Cascade)
+  item                 OpenAccountItem    @relation(fields: [openAccountItemId], references: [id], onDelete: Restrict)
+
+  @@unique([openAccountPaymentId, openAccountItemId])
+  @@index([openAccountItemId])
+}
+
+model OpenAccountTableLink {
+  id               String      @id @default(uuid()) @db.Uuid
+  openAccountId    String      @db.Uuid
+  diningTableId    String      @db.Uuid
+  assignedByUserId String      @db.Uuid
+  assignedAt       DateTime    @default(now())
+  releasedAt       DateTime?
+  openAccount      OpenAccount @relation(fields: [openAccountId], references: [id], onDelete: Cascade)
+  diningTable      DiningTable @relation(fields: [diningTableId], references: [id], onDelete: Restrict)
+  assignedBy       User        @relation("OpenAccountTableLinkAssignedBy", fields: [assignedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([openAccountId, releasedAt])
+  @@index([diningTableId, releasedAt])
+}
+
+model OpenAccountEvent {
+  id              String               @id @default(uuid()) @db.Uuid
+  openAccountId   String               @db.Uuid
+  createdByUserId String               @db.Uuid
+  type            OpenAccountEventType
+  payload         Json?
+  createdAt       DateTime             @default(now())
+  openAccount     OpenAccount          @relation(fields: [openAccountId], references: [id], onDelete: Cascade)
+  createdBy       User                 @relation("OpenAccountEventCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([openAccountId, createdAt])
 }
 
 model SaleItem {
@@ -769,28 +1080,29 @@ model SalePayment {
 }
 
 model PaymentIntent {
-  id              String              @id @default(uuid()) @db.Uuid
-  organizationId  String              @db.Uuid
-  branchId        String?             @db.Uuid
-  cashSessionId   String?             @db.Uuid
-  saleId          String?             @db.Uuid
-  paymentMethodId String?             @db.Uuid
-  status          PaymentIntentStatus @default(PENDING)
-  amount          Decimal             @db.Decimal(12, 2)
-  provider        String
-  providerRef     String?
-  rawRequest      Json?
-  rawResponse     Json?
-  expiresAt       DateTime?
-  confirmedAt     DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  branch          Branch?             @relation(fields: [branchId], references: [id], onDelete: SetNull)
-  cashSession     CashSession?        @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
-  sale            Sale?               @relation(fields: [saleId], references: [id], onDelete: SetNull)
-  paymentMethod   PaymentMethod?      @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
-  salePayments    SalePayment[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  organizationId      String               @db.Uuid
+  branchId            String?              @db.Uuid
+  cashSessionId       String?              @db.Uuid
+  saleId              String?              @db.Uuid
+  paymentMethodId     String?              @db.Uuid
+  status              PaymentIntentStatus  @default(PENDING)
+  amount              Decimal              @db.Decimal(12, 2)
+  provider            String
+  providerRef         String?
+  rawRequest          Json?
+  rawResponse         Json?
+  expiresAt           DateTime?
+  confirmedAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch              Branch?              @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  cashSession         CashSession?         @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  sale                Sale?                @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  paymentMethod       PaymentMethod?       @relation(fields: [paymentMethodId], references: [id], onDelete: SetNull)
+  salePayments        SalePayment[]
+  openAccountPayments OpenAccountPayment[]
 
   @@index([organizationId, status, createdAt])
   @@index([provider, providerRef])
@@ -854,6 +1166,43 @@ model BillingDocument {
 
   @@index([organizationId, status, createdAt])
   @@index([saleId])
+  @@unique([organizationId, series, number])
+}
+
+model BillingProviderConfig {
+  id                  String                     @id @default(uuid()) @db.Uuid
+  organizationId      String                     @unique @db.Uuid
+  provider            String                     @default("NUBEFACT_PSE")
+  environment         BillingProviderEnvironment @default(TEST)
+  baseUrl             String
+  endpoint            String
+  encryptedToken      String?
+  authorizationScheme BillingAuthorizationScheme @default(BEARER)
+  pdfFormat           String                     @default("TICKET")
+  enabled             Boolean                    @default(false)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  organization        Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([provider, enabled])
+}
+
+model BillingSeries {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @db.Uuid
+  branchId       String              @db.Uuid
+  documentType   BillingDocumentType
+  series         String
+  nextNumber     Int                 @default(1)
+  enabled        Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  branch         Branch              @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([branchId, documentType])
+  @@unique([organizationId, series])
+  @@index([organizationId, enabled])
 }
 
 model PlatformModule {

@@ -1,4 +1,10 @@
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UpsertCustomerDto {
   @IsOptional()
@@ -6,8 +12,8 @@ export class UpsertCustomerDto {
   email?: string;
 
   @IsOptional()
-  @IsIn(['DNI', 'CE', 'PASSPORT'])
-  documentType?: 'DNI' | 'CE' | 'PASSPORT';
+  @IsIn(['DNI', 'RUC', 'CE', 'PASSPORT'])
+  documentType?: 'DNI' | 'RUC' | 'CE' | 'PASSPORT';
 
   @IsOptional()
   @IsString()

@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from 'bcryptjs';
 import { PrismaClient } from '../src/database/prisma/generated/client';
 import {
+  obsoleteModuleKeys,
   obsoletePermissionKeys,
   permissions,
   platformModules,
@@ -47,6 +48,13 @@ async function seedModules(prisma: PrismaClient) {
       select: { id: true },
     });
 
+    await prisma.platformSubmodule.deleteMany({
+      where: {
+        moduleId: persistedModule.id,
+        key: { notIn: moduleItem.submodules.map((submodule) => submodule.key) },
+      },
+    });
+
     for (const submodule of moduleItem.submodules) {
       await prisma.platformSubmodule.upsert({
         where: {
@@ -72,6 +80,13 @@ async function seedModules(prisma: PrismaClient) {
       });
     }
   }
+
+  await prisma.organizationModule.deleteMany({
+    where: { moduleKey: { in: obsoleteModuleKeys } },
+  });
+  await prisma.platformModule.deleteMany({
+    where: { key: { in: obsoleteModuleKeys } },
+  });
 }
 
 async function seedPermissions(prisma: PrismaClient) {

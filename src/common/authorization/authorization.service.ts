@@ -80,6 +80,11 @@ export class AuthorizationService {
             slug: true,
             legalName: true,
             tradeName: true,
+            branches: {
+              select: {
+                id: true,
+              },
+            },
             modules: {
               where: { enabled: true },
               select: { moduleKey: true },
@@ -147,8 +152,13 @@ export class AuthorizationService {
       membershipStatus: membership.status,
       roleKeys,
       permissionKeys,
-      branchIds: membership.branchAccess.map((branchAccess) => branchAccess.branchId),
-      moduleKeys: membership.organization.modules.map((moduleItem) => moduleItem.moduleKey),
+      branchIds:
+        membership.branchAccess.length > 0
+          ? membership.branchAccess.map((branchAccess) => branchAccess.branchId)
+          : membership.organization.branches.map((branch) => branch.id),
+      moduleKeys: membership.organization.modules.map(
+        (moduleItem) => moduleItem.moduleKey,
+      ),
     };
   }
 
@@ -170,6 +180,11 @@ export class AuthorizationService {
             slug: true,
             legalName: true,
             tradeName: true,
+            branches: {
+              select: {
+                id: true,
+              },
+            },
             modules: {
               where: { enabled: true },
               select: { moduleKey: true },
@@ -229,14 +244,18 @@ export class AuthorizationService {
         organizationId: membership.organization.id,
         organizationSlug: membership.organization.slug,
         organizationName:
-          membership.organization.tradeName ?? membership.organization.legalName,
+          membership.organization.tradeName ??
+          membership.organization.legalName,
         membershipId: membership.id,
         membershipStatus: membership.status,
         roleKeys,
         permissionKeys,
-        branchIds: membership.branchAccess.map(
-          (branchAccess) => branchAccess.branchId,
-        ),
+        branchIds:
+          membership.branchAccess.length > 0
+            ? membership.branchAccess.map(
+                (branchAccess) => branchAccess.branchId,
+              )
+            : membership.organization.branches.map((branch) => branch.id),
         moduleKeys: membership.organization.modules.map(
           (moduleItem) => moduleItem.moduleKey,
         ),

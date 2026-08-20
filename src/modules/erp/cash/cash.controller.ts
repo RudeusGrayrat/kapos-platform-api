@@ -30,7 +30,8 @@ export class CashController {
   @Get('registers')
   @RequirePermissions('cash.openings.read')
   listRegisters(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
     return this.cashService.listRegisters(organizationContext.organizationId);
   }
@@ -38,7 +39,8 @@ export class CashController {
   @Post('registers')
   @RequirePermissions('cash.openings.create')
   createRegister(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreateCashRegisterDto,
   ) {
     return this.cashService.createRegister(
@@ -50,7 +52,8 @@ export class CashController {
   @Patch('registers/:id')
   @RequirePermissions('cash.openings.update')
   updateRegister(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
     @Body() input: UpdateCashRegisterDto,
   ) {
@@ -64,7 +67,8 @@ export class CashController {
   @Get('sessions')
   @RequirePermissions('cash.openings.read')
   listSessions(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -82,19 +86,26 @@ export class CashController {
   @Get('sessions/open')
   @RequirePermissions('cash.openings.read')
   getOpenSession(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Query('cashRegisterId') cashRegisterId?: string,
+    @Query('branchId') branchId?: string,
   ) {
+    if (branchId && !organizationContext.branchIds.includes(branchId)) {
+      return null;
+    }
     return this.cashService.getOpenSession(
       organizationContext.organizationId,
       cashRegisterId,
+      branchId,
     );
   }
 
   @Post('sessions/open')
   @RequirePermissions('cash.openings.create')
   openSession(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @CurrentUser() user: { userId: string },
     @Body() input: OpenCashSessionDto,
   ) {
@@ -108,7 +119,8 @@ export class CashController {
   @Get('sessions/:id/movements')
   @RequirePermissions('cash.movements.read')
   listMovements(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
   ) {
     return this.cashService.listMovements(
@@ -120,7 +132,8 @@ export class CashController {
   @Post('sessions/:id/movements')
   @RequirePermissions('cash.movements.create')
   createMovement(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @CurrentUser() user: { userId: string },
     @Param('id') id: string,
     @Body() input: CreateCashMovementDto,
@@ -136,7 +149,8 @@ export class CashController {
   @Post('sessions/:id/close')
   @RequirePermissions('cash.closings.create')
   closeSession(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @CurrentUser() user: { userId: string },
     @Param('id') id: string,
     @Body() input: CloseCashSessionDto,

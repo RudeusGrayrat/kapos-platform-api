@@ -208,7 +208,9 @@ describe('Identity compatibility and validation', () => {
     };
 
     const legacyController = new UsersController(usersService as never);
-    const consumerController = new ConsumerUsersController(usersService as never);
+    const consumerController = new ConsumerUsersController(
+      usersService as never,
+    );
     const dto = { firstName: 'Juan' };
 
     legacyController.updateMe({ userId: 'user-1' }, dto);
@@ -227,7 +229,10 @@ describe('Identity compatibility and validation', () => {
   });
 });
 
-function createResponseMock(): Pick<Response, 'cookie' | 'clearCookie' | 'setHeader'> {
+function createResponseMock(): Pick<
+  Response,
+  'cookie' | 'clearCookie' | 'setHeader'
+> {
   return {
     cookie: jest.fn(),
     clearCookie: jest.fn(),

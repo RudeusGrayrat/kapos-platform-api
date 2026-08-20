@@ -52,11 +52,11 @@ export class ErpAccessController {
   async getAccessSummary(@CurrentUser() user: { userId: string }) {
     const [safeUser, platformContext, memberships, navigationCatalog] =
       await Promise.all([
-      this.usersService.getCurrentUser(user.userId),
-      this.authorizationService.getPlatformContextForUser(user.userId),
-      this.authorizationService.listMembershipContextsForUser(user.userId),
-      this.authorizationService.getNavigationCatalogForUser(user.userId),
-    ]);
+        this.usersService.getCurrentUser(user.userId),
+        this.authorizationService.getPlatformContextForUser(user.userId),
+        this.authorizationService.listMembershipContextsForUser(user.userId),
+        this.authorizationService.getNavigationCatalogForUser(user.userId),
+      ]);
 
     return {
       user: safeUser,
@@ -453,7 +453,10 @@ export class ErpAccessController {
     @Param('id') id: string,
     @Body() input: UpdatePermissionOverridesDto,
   ) {
-    return this.platformAdminService.updatePlatformPermissionOverrides(id, input);
+    return this.platformAdminService.updatePlatformPermissionOverrides(
+      id,
+      input,
+    );
   }
 
   @Patch('platform/users/:id/memberships/:membershipId/permissions')

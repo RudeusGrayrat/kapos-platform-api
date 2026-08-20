@@ -6,7 +6,10 @@ export class HttpLoggingMiddleware implements NestMiddleware {
   private readonly logger = new Logger('HTTP');
 
   use(request: Request, response: Response, next: NextFunction): void {
-    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') {
+    if (
+      process.env.NODE_ENV === 'production' ||
+      process.env.NODE_ENV === 'test'
+    ) {
       next();
       return;
     }

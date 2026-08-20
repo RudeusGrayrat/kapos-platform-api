@@ -9,7 +9,9 @@ import { AuthService } from './auth.service';
 
 jest.mock('bcryptjs', () => ({
   hash: jest.fn(async (value: string) => `hashed:${value}`),
-  compare: jest.fn(async (value: string, hashed: string) => hashed === `hashed:${value}`),
+  compare: jest.fn(
+    async (value: string, hashed: string) => hashed === `hashed:${value}`,
+  ),
 }));
 
 describe('AuthService', () => {
@@ -181,11 +183,17 @@ describe('AuthService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const safeUser = { ...user, passwordHash: undefined, lastLoginAt: new Date() };
+    const safeUser = {
+      ...user,
+      passwordHash: undefined,
+      lastLoginAt: new Date(),
+    };
 
     usersService.findByIdentifierForAuth.mockResolvedValue(user);
     usersService.markLoginSucceeded.mockResolvedValue(safeUser);
-    jwtService.signAsync.mockResolvedValueOnce('access-1').mockResolvedValueOnce('refresh-1');
+    jwtService.signAsync
+      .mockResolvedValueOnce('access-1')
+      .mockResolvedValueOnce('refresh-1');
 
     const result = await service.loginLocal({
       identifier: 'login@basti.dev',
@@ -217,18 +225,26 @@ describe('AuthService', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const safeUser = { ...user, passwordHash: undefined, lastLoginAt: new Date() };
+    const safeUser = {
+      ...user,
+      passwordHash: undefined,
+      lastLoginAt: new Date(),
+    };
 
     usersService.findByIdentifierForAuth.mockResolvedValue(user);
     usersService.markLoginSucceeded.mockResolvedValue(safeUser);
-    jwtService.signAsync.mockResolvedValueOnce('access-2').mockResolvedValueOnce('refresh-2');
+    jwtService.signAsync
+      .mockResolvedValueOnce('access-2')
+      .mockResolvedValueOnce('refresh-2');
 
     await service.loginLocal({
       identifier: '76466972',
       password: 'StrongPass123!',
     });
 
-    expect(usersService.findByIdentifierForAuth).toHaveBeenCalledWith('76466972');
+    expect(usersService.findByIdentifierForAuth).toHaveBeenCalledWith(
+      '76466972',
+    );
   });
 
   it('returns the same invalid credentials error for unknown identifier and wrong password', async () => {

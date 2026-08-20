@@ -48,7 +48,7 @@ describe('UsersService', () => {
       firstName: 'Juan',
       lastName: 'Perez',
       phone: null,
-      documentType: 'DNI' as never,
+      documentType: 'DNI',
       documentNumber: '76466972',
       avatarUrl: 'https://avatar.test',
     });

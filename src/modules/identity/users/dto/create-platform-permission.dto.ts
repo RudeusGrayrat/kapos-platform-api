@@ -13,7 +13,9 @@ import {
 } from '../../../../database/prisma/generated/client';
 
 export class CreatePlatformPermissionDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsString()
   @MinLength(3)
   @MaxLength(160)

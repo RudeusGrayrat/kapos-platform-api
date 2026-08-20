@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { OrganizationAuthorizationContext } from '../../../common/authorization/authorization.service';
 import { OrganizationContext } from '../../../common/decorators/organization-context.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -20,15 +29,19 @@ export class CatalogController {
   @Get('categories')
   @RequirePermissions('catalog.categories.read')
   listCategories(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
-    return this.catalogService.listCategories(organizationContext.organizationId);
+    return this.catalogService.listCategories(
+      organizationContext.organizationId,
+    );
   }
 
   @Post('categories')
   @RequirePermissions('catalog.categories.create')
   createCategory(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreateCategoryDto,
   ) {
     return this.catalogService.createCategory(
@@ -40,7 +53,8 @@ export class CatalogController {
   @Patch('categories/:id')
   @RequirePermissions('catalog.categories.update')
   updateCategory(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
     @Body() input: UpdateCategoryDto,
   ) {
@@ -54,7 +68,8 @@ export class CatalogController {
   @Get('products')
   @RequirePermissions('catalog.products.read')
   listProducts(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -70,7 +85,8 @@ export class CatalogController {
   @Post('products')
   @RequirePermissions('catalog.products.create')
   createProduct(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreateProductDto,
   ) {
     return this.catalogService.createProduct(
@@ -82,7 +98,8 @@ export class CatalogController {
   @Patch('products/:id')
   @RequirePermissions('catalog.products.update')
   updateProduct(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
     @Body() input: UpdateProductDto,
   ) {
@@ -96,7 +113,8 @@ export class CatalogController {
   @Get('stock')
   @RequirePermissions('catalog.stock.read')
   listStock(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
     return this.catalogService.listStock(organizationContext.organizationId);
   }
@@ -104,7 +122,8 @@ export class CatalogController {
   @Post('stock')
   @RequirePermissions('catalog.adjustments.create')
   upsertStock(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: UpsertStockDto,
   ) {
     return this.catalogService.upsertStock(

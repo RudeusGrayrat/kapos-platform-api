@@ -15,6 +15,9 @@ import { SalesController } from './sales/sales.controller';
 import { SalesService } from './sales/sales.service';
 import { SettingsController } from './settings/settings.controller';
 import { SettingsService } from './settings/settings.service';
+import { DiningSpacesService } from './restaurant/dining-spaces.service';
+import { OpenAccountsService } from './restaurant/open-accounts.service';
+import { RestaurantController } from './restaurant/restaurant.controller';
 
 @Module({
   imports: [AuthorizationModule, PrismaModule],
@@ -26,6 +29,7 @@ import { SettingsService } from './settings/settings.service';
     CustomersController,
     PaymentsController,
     BillingController,
+    RestaurantController,
   ],
   providers: [
     SettingsService,
@@ -35,6 +39,8 @@ import { SettingsService } from './settings/settings.service';
     CustomersService,
     PaymentsService,
     BillingService,
+    DiningSpacesService,
+    OpenAccountsService,
   ],
 })
 export class ErpModule {}

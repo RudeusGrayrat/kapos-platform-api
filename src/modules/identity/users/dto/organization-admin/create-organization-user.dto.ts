@@ -16,7 +16,9 @@ import {
 } from '../../../../../database/prisma/generated/client';
 
 export class CreateOrganizationUserDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail()
   @MaxLength(120)
   email!: string;

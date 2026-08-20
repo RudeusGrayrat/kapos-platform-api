@@ -100,7 +100,9 @@ function getRefreshCookieBaseOptions(configService: ConfigLike): CookieOptions {
 
 function isProductionEnvironment(configService: ConfigLike): boolean {
   const environment =
-    configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV ?? 'development';
+    configService.get<string>('NODE_ENV') ??
+    process.env.NODE_ENV ??
+    'development';
 
   return environment === 'production';
 }

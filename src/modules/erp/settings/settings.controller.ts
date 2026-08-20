@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import type { OrganizationAuthorizationContext } from '../../../common/authorization/authorization.service';
 import { OrganizationContext } from '../../../common/decorators/organization-context.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -20,7 +29,8 @@ export class SettingsController {
   @Get('organization')
   @RequirePermissions('settings.organization.read')
   getOrganization(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
     return this.settingsService.getOrganizationProfile(
       organizationContext.organizationId,
@@ -30,7 +40,8 @@ export class SettingsController {
   @Patch('organization')
   @RequirePermissions('settings.organization.update')
   updateOrganization(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: UpdateOrganizationProfileDto,
   ) {
     return this.settingsService.updateOrganizationProfile(
@@ -42,15 +53,19 @@ export class SettingsController {
   @Get('branches')
   @RequirePermissions('settings.branches.read')
   listBranches(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
-    return this.settingsService.listBranches(organizationContext.organizationId);
+    return this.settingsService.listBranches(
+      organizationContext.organizationId,
+    );
   }
 
   @Post('branches')
   @RequirePermissions('settings.branches.create')
   createBranch(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreateBranchDto,
   ) {
     return this.settingsService.createBranch(
@@ -62,7 +77,8 @@ export class SettingsController {
   @Patch('branches/:id')
   @RequirePermissions('settings.branches.update')
   updateBranch(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
     @Body() input: UpdateBranchDto,
   ) {
@@ -74,9 +90,10 @@ export class SettingsController {
   }
 
   @Get('payment-methods')
-  @RequirePermissions('settings.parameters.read')
+  @RequirePermissions('settings.payment_methods.read')
   listPaymentMethods(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
   ) {
     return this.settingsService.listPaymentMethods(
       organizationContext.organizationId,
@@ -84,9 +101,10 @@ export class SettingsController {
   }
 
   @Post('payment-methods')
-  @RequirePermissions('settings.parameters.create')
+  @RequirePermissions('settings.payment_methods.create')
   createPaymentMethod(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreatePaymentMethodDto,
   ) {
     return this.settingsService.createPaymentMethod(
@@ -96,9 +114,10 @@ export class SettingsController {
   }
 
   @Patch('payment-methods/:id')
-  @RequirePermissions('settings.parameters.update')
+  @RequirePermissions('settings.payment_methods.update')
   updatePaymentMethod(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') id: string,
     @Body() input: UpdatePaymentMethodDto,
   ) {
@@ -106,6 +125,19 @@ export class SettingsController {
       organizationContext.organizationId,
       id,
       input,
+    );
+  }
+
+  @Delete('payment-methods/:id')
+  @RequirePermissions('settings.payment_methods.delete')
+  deletePaymentMethod(
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
+    @Param('id') id: string,
+  ) {
+    return this.settingsService.deletePaymentMethod(
+      organizationContext.organizationId,
+      id,
     );
   }
 }

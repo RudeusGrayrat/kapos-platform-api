@@ -1,7 +1,10 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { applyAuthResponseHeaders, toMobileAuthSessionResponse } from './auth-http.util';
+import {
+  applyAuthResponseHeaders,
+  toMobileAuthSessionResponse,
+} from './auth-http.util';
 import { ErpLoginDto } from './dto/erp-login.dto';
 import { MobileRefreshTokenDto } from './dto/mobile-refresh-token.dto';
 

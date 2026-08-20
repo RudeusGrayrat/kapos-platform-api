@@ -17,7 +17,8 @@ export class PaymentsController {
   @Post('intents')
   @RequirePermissions('sales.pos.create')
   createIntent(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: CreatePaymentIntentDto,
   ) {
     return this.paymentsService.createIntent(
@@ -29,7 +30,8 @@ export class PaymentsController {
   @Post('intents/:id/confirm')
   @RequirePermissions('sales.pos.create')
   confirmIntent(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') paymentIntentId: string,
     @Body() input: ConfirmPaymentIntentDto,
   ) {
@@ -43,7 +45,8 @@ export class PaymentsController {
   @Post('intents/:id/fail')
   @RequirePermissions('sales.pos.create')
   failIntent(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') paymentIntentId: string,
     @Body() input: ConfirmPaymentIntentDto,
   ) {

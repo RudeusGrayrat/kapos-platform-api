@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { OrganizationAuthorizationContext } from '../../../common/authorization/authorization.service';
 import { OrganizationContext } from '../../../common/decorators/organization-context.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -16,7 +24,8 @@ export class CustomersController {
   @Get()
   @RequirePermissions('sales.customers.read')
   listCustomers(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -32,7 +41,8 @@ export class CustomersController {
   @Post()
   @RequirePermissions('sales.customers.create')
   upsertCustomer(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Body() input: UpsertCustomerDto,
   ) {
     return this.customersService.upsertCustomer(
@@ -44,7 +54,8 @@ export class CustomersController {
   @Get(':id/wallet')
   @RequirePermissions('sales.customers.read')
   getCustomerWallet(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Param('id') customerProfileId: string,
   ) {
     return this.customersService.getCustomerWallet(

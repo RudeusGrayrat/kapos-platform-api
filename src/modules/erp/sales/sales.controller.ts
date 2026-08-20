@@ -26,7 +26,8 @@ export class SalesController {
   @Get()
   @RequirePermissions('sales.pos.read')
   listSales(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -42,7 +43,8 @@ export class SalesController {
   @Post()
   @RequirePermissions('sales.pos.create')
   createSale(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @CurrentUser() user: { userId: string },
     @Body() input: CreateSaleDto,
   ) {
@@ -56,7 +58,8 @@ export class SalesController {
   @Post(':id/cancel')
   @RequirePermissions('sales.pos.cancel')
   cancelSale(
-    @OrganizationContext() organizationContext: OrganizationAuthorizationContext,
+    @OrganizationContext()
+    organizationContext: OrganizationAuthorizationContext,
     @CurrentUser() user: { userId: string },
     @Param('id') saleId: string,
     @Body() input: CancelSaleDto,

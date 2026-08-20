@@ -12,7 +12,9 @@ import {
 import { ModuleAudience } from '../../../../database/prisma/generated/client';
 
 export class CreatePlatformModuleDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsString()
   @MinLength(2)
   @MaxLength(50)

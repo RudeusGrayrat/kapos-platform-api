@@ -26,11 +26,19 @@ export class CustomersService {
       ...(search
         ? {
             OR: [
-              { externalCustomerCode: { contains: search, mode: 'insensitive' } },
+              {
+                externalCustomerCode: { contains: search, mode: 'insensitive' },
+              },
               { user: { email: { contains: search, mode: 'insensitive' } } },
-              { user: { firstName: { contains: search, mode: 'insensitive' } } },
+              {
+                user: { firstName: { contains: search, mode: 'insensitive' } },
+              },
               { user: { lastName: { contains: search, mode: 'insensitive' } } },
-              { user: { documentNumber: { contains: search, mode: 'insensitive' } } },
+              {
+                user: {
+                  documentNumber: { contains: search, mode: 'insensitive' },
+                },
+              },
               { user: { phone: { contains: search, mode: 'insensitive' } } },
             ],
           }
@@ -119,7 +127,9 @@ export class CustomersService {
     });
 
     if (!customer) {
-      throw new BadRequestException('El cliente no pertenece a la organizacion.');
+      throw new BadRequestException(
+        'El cliente no pertenece a la organizacion.',
+      );
     }
 
     return this.serializeCustomer(customer);
@@ -136,6 +146,7 @@ export class CustomersService {
             ? [{ documentNumber: input.documentNumber.trim() }]
             : []),
           ...(input.email ? [{ email: input.email.trim().toLowerCase() }] : []),
+          ...(input.phone ? [{ phone: input.phone.trim() }] : []),
         ],
       },
     });
@@ -145,8 +156,9 @@ export class CustomersService {
         where: { id: existingUser.id },
         data: {
           email: input.email?.trim().toLowerCase() ?? existingUser.email,
-          documentType: (input.documentType as DocumentType | undefined) ?? existingUser.documentType,
-          documentNumber: input.documentNumber?.trim() ?? existingUser.documentNumber,
+          documentType: input.documentType ?? existingUser.documentType,
+          documentNumber:
+            input.documentNumber?.trim() ?? existingUser.documentNumber,
           firstName: input.firstName?.trim() ?? existingUser.firstName,
           lastName: input.lastName?.trim() ?? existingUser.lastName,
           phone: input.phone?.trim() ?? existingUser.phone,
@@ -158,7 +170,7 @@ export class CustomersService {
     return transaction.user.create({
       data: {
         email: input.email?.trim().toLowerCase(),
-        documentType: input.documentType as DocumentType | undefined,
+        documentType: input.documentType,
         documentNumber: input.documentNumber?.trim(),
         firstName: input.firstName?.trim(),
         lastName: input.lastName?.trim(),
