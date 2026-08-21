@@ -319,10 +319,15 @@ export class BillingService {
       );
     }
     const series = input.series.trim().toUpperCase();
-    const prefix = input.documentType === 'FACTURA' ? 'F' : 'B';
-    if (!series.startsWith(prefix)) {
+    const allowedPrefixes =
+      input.documentType === BillingDocumentType.FACTURA
+        ? ['F']
+        : input.documentType === BillingDocumentType.BOLETA
+          ? ['B']
+          : ['B', 'F'];
+    if (!allowedPrefixes.some((prefix) => series.startsWith(prefix))) {
       throw new BadRequestException(
-        `La serie de ${input.documentType.toLowerCase()} debe comenzar con ${prefix}.`,
+        `La serie de ${input.documentType.toLowerCase()} debe comenzar con ${allowedPrefixes.join(' o ')}.`,
       );
     }
 
@@ -599,13 +604,28 @@ export class BillingService {
       );
     }
     if (documentType === 'FACTURA') {
-      const customer = document.sale.customerProfile?.user;
+      const fiscalDocumentNumber =
+        document.recipientDocumentNumber ??
+        document.sale.customerProfile?.user.documentNumber;
+      const fiscalDocumentType =
+        document.recipientDocumentType ??
+        document.sale.customerProfile?.user.documentType;
+      const fiscalName =
+        document.recipientName ??
+        [
+          document.sale.customerProfile?.user.firstName,
+          document.sale.customerProfile?.user.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
       if (
-        customer?.documentType !== 'RUC' ||
-        customer.documentNumber?.length !== 11
+        fiscalDocumentType !== 'RUC' ||
+        fiscalDocumentNumber?.length !== 11 ||
+        !fiscalName
       ) {
         throw new BadRequestException(
-          'Para emitir factura selecciona un cliente con RUC de 11 digitos.',
+          'Para emitir factura ingresa RUC de 11 digitos y razon social.',
         );
       }
     }
@@ -667,6 +687,12 @@ export class BillingService {
     const customerName = customer
       ? [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim()
       : '';
+    const recipientDocumentType =
+      document.recipientDocumentType ?? customer?.documentType ?? null;
+    const recipientDocumentNumber =
+      document.recipientDocumentNumber ?? customer?.documentNumber ?? '-';
+    const recipientName =
+      document.recipientName ?? (customerName || 'CLIENTES VARIOS');
 
     return {
       operacion: 'generar_comprobante',
@@ -674,13 +700,13 @@ export class BillingService {
       serie: document.series,
       numero: Number(document.number),
       sunat_transaction: 1,
-      cliente_tipo_de_documento: customer
-        ? this.providerCustomerDocumentType(customer.documentType)
-        : '-',
-      cliente_numero_de_documento: customer?.documentNumber ?? '-',
-      cliente_denominacion: customerName || 'CLIENTES VARIOS',
-      cliente_direccion: '-',
-      cliente_email: customer?.email ?? '',
+      cliente_tipo_de_documento: this.providerCustomerDocumentType(
+        recipientDocumentType,
+      ),
+      cliente_numero_de_documento: recipientDocumentNumber,
+      cliente_denominacion: recipientName,
+      cliente_direccion: document.recipientAddress ?? '-',
+      cliente_email: document.recipientEmail ?? customer?.email ?? '',
       fecha_de_emision: this.formatProviderDate(sale.soldAt),
       moneda: 1,
       tipo_de_cambio: '',
@@ -882,6 +908,8 @@ export class BillingService {
   private providerDocumentType(type: BillingDocumentType) {
     if (type === BillingDocumentType.FACTURA) return 1;
     if (type === BillingDocumentType.BOLETA) return 2;
+    if (type === BillingDocumentType.NOTA_CREDITO) return 3;
+    if (type === BillingDocumentType.NOTA_DEBITO) return 4;
     throw new BadRequestException('Solo se pueden emitir boletas o facturas.');
   }
 

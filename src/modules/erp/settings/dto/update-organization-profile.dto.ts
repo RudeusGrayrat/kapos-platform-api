@@ -46,6 +46,6 @@ export class UpdateOrganizationProfileDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(300)
+  @MaxLength(200000)
   logoUrl?: string;
 }

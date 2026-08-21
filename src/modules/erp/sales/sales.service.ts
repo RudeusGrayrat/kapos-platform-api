@@ -290,6 +290,10 @@ export class SalesService {
               organizationId,
               type: input.billingDocumentType ?? 'TICKET',
               status: BillingDocumentStatus.PENDING,
+              ...this.billingRecipientData(
+                input.billingDocumentType ?? 'TICKET',
+                input.billingRecipient,
+              ),
             },
           },
         },
@@ -499,6 +503,47 @@ export class SalesService {
 
       return this.serializeSale(createdSale);
     });
+  }
+
+  private billingRecipientData(
+    documentType: 'BOLETA' | 'FACTURA' | 'TICKET',
+    recipient?: CreateSaleDto['billingRecipient'],
+  ): Partial<
+    Pick<
+      Prisma.BillingDocumentUncheckedCreateWithoutSaleInput,
+      | 'recipientDocumentType'
+      | 'recipientDocumentNumber'
+      | 'recipientName'
+      | 'recipientAddress'
+      | 'recipientEmail'
+    >
+  > {
+    if (documentType === 'FACTURA') {
+      const documentNumber = recipient?.documentNumber?.trim() ?? '';
+      const name = recipient?.name?.trim() ?? '';
+      if (!/^\d{11}$/.test(documentNumber) || !name) {
+        throw new BadRequestException(
+          'Para emitir factura ingresa RUC de 11 digitos y razon social.',
+        );
+      }
+      return {
+        recipientDocumentType: 'RUC',
+        recipientDocumentNumber: documentNumber,
+        recipientName: name,
+        recipientAddress: recipient?.address?.trim() || null,
+        recipientEmail: recipient?.email?.trim() || null,
+      };
+    }
+
+    if (!recipient) return {};
+
+    return {
+      recipientDocumentType: recipient.documentType?.trim() || null,
+      recipientDocumentNumber: recipient.documentNumber?.trim() || null,
+      recipientName: recipient.name?.trim() || null,
+      recipientAddress: recipient.address?.trim() || null,
+      recipientEmail: recipient.email?.trim() || null,
+    };
   }
 
   async cancelSale(

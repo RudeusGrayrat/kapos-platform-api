@@ -191,6 +191,8 @@ enum PaymentIntentStatus {
 enum BillingDocumentType {
   BOLETA
   FACTURA
+  NOTA_CREDITO
+  NOTA_DEBITO
   TICKET
 }
 
@@ -1149,6 +1151,11 @@ model BillingDocument {
   saleId         String                @db.Uuid
   type           BillingDocumentType   @default(TICKET)
   status         BillingDocumentStatus @default(PENDING)
+  recipientDocumentType   String?
+  recipientDocumentNumber String?
+  recipientName           String?
+  recipientAddress        String?
+  recipientEmail          String?
   provider       String?
   externalId     String?
   series         String?

@@ -90,22 +90,6 @@ export const platformModules: ModuleSeed[] = [
     ],
   },
   {
-    key: 'dashboard',
-    name: 'Inicio',
-    icon: 'layout-dashboard',
-    audience: 'ORGANIZATION',
-    sortOrder: 10,
-    submodules: [
-      {
-        key: 'home',
-        name: 'Panel principal',
-        route: '/dashboard',
-        permissionKey: 'dashboard.read',
-        sortOrder: 10,
-      },
-    ],
-  },
-  {
     key: 'settings',
     name: 'Configuracion',
     icon: 'settings',
@@ -513,15 +497,6 @@ export const permissions: PermissionSeed[] = [
     submoduleKey: 'activity',
     scope: 'PLATFORM',
     audience: 'PLATFORM',
-  },
-  {
-    key: 'dashboard.read',
-    name: 'Ver dashboard',
-    description: 'Permite ver el panel principal del ERP.',
-    moduleKey: 'dashboard',
-    submoduleKey: 'home',
-    scope: 'ORGANIZATION',
-    audience: 'ORGANIZATION',
   },
   {
     key: 'settings.organization.read',
@@ -994,6 +969,7 @@ export const permissions: PermissionSeed[] = [
 ];
 
 export const obsoletePermissionKeys = [
+  'dashboard.read',
   'platform.organizations.manage',
   'platform.users.manage',
   'platform.memberships.manage',
@@ -1023,7 +999,7 @@ export const obsoletePermissionKeys = [
   'finance.reports.read',
 ];
 
-export const obsoleteModuleKeys = ['billing'];
+export const obsoleteModuleKeys = ['billing', 'dashboard'];
 
 permissions.push(
   {
@@ -1726,7 +1702,6 @@ export const roles: RoleSeed[] = [
       'Gestiona usuarios internos, configuracion y operacion general.',
     isSystem: true,
     permissionKeys: [
-      'dashboard.read',
       'settings.organization.read',
       'settings.organization.update',
       'settings.branches.read',
@@ -1848,7 +1823,6 @@ export const roles: RoleSeed[] = [
       'Controla operacion diaria y revisa resultados sin dominio total del sistema.',
     isSystem: true,
     permissionKeys: [
-      'dashboard.read',
       'rrhh.collaborators.read',
       'rrhh.attendance.read',
       'settings.tables.read',
@@ -1890,7 +1864,6 @@ export const roles: RoleSeed[] = [
     description: 'Rol operativo para caja, pedidos y POS con alcance limitado.',
     isSystem: true,
     permissionKeys: [
-      'dashboard.read',
       'settings.tables.read',
       'settings.payment_methods.read',
       'sales.customers.read',

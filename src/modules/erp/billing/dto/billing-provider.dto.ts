@@ -43,8 +43,8 @@ export class UpsertBillingSeriesDto {
   @IsString()
   branchId!: string;
 
-  @IsIn(['BOLETA', 'FACTURA'])
-  documentType!: 'BOLETA' | 'FACTURA';
+  @IsIn(['BOLETA', 'FACTURA', 'NOTA_CREDITO', 'NOTA_DEBITO'])
+  documentType!: 'BOLETA' | 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO';
 
   @IsString()
   @Matches(/^[BF][A-Z0-9]{3}$/i, {

@@ -90,6 +90,24 @@ async function seedModules(prisma: PrismaClient) {
 }
 
 async function seedPermissions(prisma: PrismaClient) {
+  const obsoletePermissions = await prisma.permission.findMany({
+    where: { key: { in: obsoletePermissionKeys } },
+    select: { id: true },
+  });
+  const obsoletePermissionIds = obsoletePermissions.map((permission) => permission.id);
+
+  if (obsoletePermissionIds.length > 0) {
+    await prisma.rolePermission.deleteMany({
+      where: { permissionId: { in: obsoletePermissionIds } },
+    });
+    await prisma.membershipPermissionOverride.deleteMany({
+      where: { permissionId: { in: obsoletePermissionIds } },
+    });
+    await prisma.platformAccessPermissionOverride.deleteMany({
+      where: { permissionId: { in: obsoletePermissionIds } },
+    });
+  }
+
   for (const permission of permissions) {
     if (obsoletePermissionKeys.includes(permission.key)) {
       continue;

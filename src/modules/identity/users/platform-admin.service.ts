@@ -1667,8 +1667,6 @@ export class PlatformAdminService {
     const summaries: Record<string, string> = {
       platform:
         'Gobierna clientes, owners, catalogos base y actividad de toda la plataforma.',
-      dashboard:
-        'Entrega una vista ejecutiva y operativa del negocio apenas se ingresa al ERP.',
       settings:
         'Controla empresa, sucursales, usuarios, roles y parametros globales.',
       rrhh: 'Administra colaboradores, asistencia y planillas del cliente.',

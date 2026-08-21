@@ -204,6 +204,32 @@ export class OpenAccountPaymentAllocationDto {
   quantity!: number;
 }
 
+export class BillingRecipientDto {
+  @IsOptional()
+  @IsIn(['DNI', 'RUC', 'CE', 'PASSPORT'])
+  documentType?: 'DNI' | 'RUC' | 'CE' | 'PASSPORT';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  documentNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  email?: string;
+}
+
 export class RecordOpenAccountPaymentDto {
   @Type(() => Number)
   @IsInt()
@@ -229,6 +255,15 @@ export class RecordOpenAccountPaymentDto {
   @IsNumber()
   @Min(0.01)
   amount!: number;
+
+  @IsOptional()
+  @IsIn(['BOLETA', 'FACTURA', 'TICKET'])
+  billingDocumentType?: 'BOLETA' | 'FACTURA' | 'TICKET';
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BillingRecipientDto)
+  billingRecipient?: BillingRecipientDto;
 
   @IsOptional()
   @IsArray()

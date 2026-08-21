@@ -128,8 +128,7 @@ export class ErpAccessController {
   }
 
   @Get('organization/dashboard')
-  @UseGuards(OrganizationContextGuard, PermissionsGuard)
-  @RequirePermissions('dashboard.read')
+  @UseGuards(OrganizationContextGuard)
   getOrganizationDashboardAccess(
     @CurrentUser()
     user: {
